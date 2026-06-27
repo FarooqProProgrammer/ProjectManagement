@@ -14,6 +14,7 @@ export interface UserProfile {
   email: string;
   displayName: string;
   photoURL: string | null;
+  defaultWorkspaceId?: string;
 }
 
 export const syncUserToFirestore = async (user: User): Promise<void> => {
@@ -61,4 +62,9 @@ export const getUsersByIds = async (uids: string[]): Promise<UserProfile[]> => {
   }
 
   return users;
+};
+
+export const updateUserProfile = async (uid: string, updates: Partial<UserProfile>): Promise<void> => {
+  const userRef = doc(db, "users", uid);
+  await setDoc(userRef, updates, { merge: true });
 };

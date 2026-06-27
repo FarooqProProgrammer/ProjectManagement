@@ -20,6 +20,7 @@ export interface Task {
   title: string;
   description?: string;
   status: TaskStatus;
+  assigneeId?: string;
   dueDate?: string;
   createdAt?: any;
 }
@@ -29,7 +30,8 @@ export const createTask = async (
   projectId: string,
   title: string,
   description?: string,
-  dueDate?: string
+  dueDate?: string,
+  assigneeId?: string
 ): Promise<Task> => {
   const tasksRef = collection(db, "tasks");
   const newTask = {
@@ -39,6 +41,7 @@ export const createTask = async (
     description: description || "",
     status: "To Do" as TaskStatus,
     dueDate: dueDate || "",
+    assigneeId: assigneeId || null,
     createdAt: serverTimestamp(),
   };
 
@@ -64,6 +67,11 @@ export const getTasksByWorkspace = async (workspaceId: string): Promise<Task[]> 
 export const updateTaskStatus = async (taskId: string, status: TaskStatus): Promise<void> => {
   const taskRef = doc(db, "tasks", taskId);
   await updateDoc(taskRef, { status });
+};
+
+export const updateTaskAssignee = async (taskId: string, assigneeId: string | null): Promise<void> => {
+  const taskRef = doc(db, "tasks", taskId);
+  await updateDoc(taskRef, { assigneeId });
 };
 
 export const deleteTask = async (taskId: string): Promise<void> => {

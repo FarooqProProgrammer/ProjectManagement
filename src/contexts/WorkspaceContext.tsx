@@ -4,6 +4,8 @@ import { createContext, useContext, useState, useEffect, ReactNode } from "react
 import { User, onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { Workspace, getUserWorkspaces, createWorkspace, updateWorkspaceName, deleteWorkspace } from "@/lib/workspace";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 interface WorkspaceContextProps {
   workspaces: Workspace[];
@@ -30,9 +32,20 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         try {
           const userWs = await getUserWorkspaces(currentUser.uid);
           setWorkspaces(userWs);
+          
           if (userWs.length > 0) {
-            const savedId = localStorage.getItem("activeWorkspaceId");
-            const found = userWs.find(w => w.id === savedId);
+            // First check Firebase for synced preference
+            const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+            let preferredId = null;
+            if (userDoc.exists()) {
+              preferredId = userDoc.data().defaultWorkspaceId;
+            }
+            // Fallback to local storage
+            if (!preferredId) {
+              preferredId = localStorage.getItem("activeWorkspaceId");
+            }
+
+            const found = userWs.find(w => w.id === preferredId);
             setActiveWorkspace(found || userWs[0]);
           } else {
             const defaultWsName = currentUser.displayName ? `${currentUser.displayName.split(' ')[0]}'s Workspace` : "My Workspace";
