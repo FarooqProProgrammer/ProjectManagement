@@ -41,9 +41,9 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ id: s
   if (!project) {
     return (
       <div className="flex h-[50vh] flex-col items-center justify-center gap-4">
-        <h2 className="text-2xl font-bold text-white">Project not found</h2>
-        <p className="text-slate-400">The project you're looking for doesn't exist or you don't have access.</p>
-        <Link href="/dashboard/projects" className="text-blue-400 hover:text-blue-300">
+        <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Project not found</h2>
+        <p className="text-slate-500 dark:text-slate-400">The project you're looking for doesn't exist or you don't have access.</p>
+        <Link href="/dashboard/projects" className="text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300">
           Return to Projects
         </Link>
       </div>
@@ -55,23 +55,23 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ id: s
       <title>{`${project.name} | Projectify`}</title>
 
       {/* Header Banner */}
-      <div className="relative w-full rounded-2xl overflow-hidden bg-slate-900 border border-slate-800 mb-8 shadow-xl">
+      <div className="relative w-full rounded-2xl overflow-hidden bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 mb-8 shadow-xl">
         {project.imageUrl ? (
           <div 
             className="h-48 w-full bg-cover bg-center"
             style={{ backgroundImage: `url(${project.imageUrl})` }}
           >
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-white dark:from-slate-900 to-transparent opacity-80 dark:opacity-100" />
           </div>
         ) : (
-          <div className={`h-48 w-full bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center`}>
+          <div className={`h-48 w-full bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900 flex items-center justify-center`}>
             <Folder className={`w-24 h-24 ${project.color.replace('bg-', 'text-')} opacity-20`} />
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-white dark:from-slate-900 to-transparent opacity-80 dark:opacity-100" />
           </div>
         )}
 
         <div className="absolute top-4 left-4 z-10">
-          <Link href="/dashboard/projects" className="inline-flex items-center px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-md text-sm font-medium text-white hover:bg-black/60 transition-colors border border-white/10">
+          <Link href="/dashboard/projects" className="inline-flex items-center px-3 py-1.5 rounded-full bg-white/60 dark:bg-black/40 backdrop-blur-md text-sm font-medium text-slate-900 dark:text-white hover:bg-white/80 dark:hover:bg-black/60 transition-colors border border-slate-200/50 dark:border-white/10">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Projects
           </Link>
@@ -80,21 +80,21 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ id: s
         <div className="absolute bottom-0 left-0 w-full p-6 md:p-8 flex flex-col md:flex-row md:items-end justify-between gap-4 z-10">
           <div>
             <div className="flex items-center gap-3 mb-2">
-              <span className="px-3 py-1 rounded-full bg-blue-500/20 text-blue-400 text-xs font-semibold uppercase tracking-wider border border-blue-500/20">
+              <span className="px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400 text-xs font-semibold uppercase tracking-wider border border-blue-200 dark:border-blue-500/20">
                 {project.status}
               </span>
               {project.deadline && (
-                <span className="flex items-center text-xs font-medium text-slate-300 bg-black/40 px-3 py-1 rounded-full border border-white/10 backdrop-blur-md">
+                <span className="flex items-center text-xs font-medium text-slate-700 dark:text-slate-300 bg-white/60 dark:bg-black/40 px-3 py-1 rounded-full border border-slate-200/50 dark:border-white/10 backdrop-blur-md">
                   <Calendar className="w-3 h-3 mr-1.5" />
                   Due: {new Date(project.deadline).toLocaleDateString()}
                 </span>
               )}
             </div>
-            <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white mb-2 shadow-black/50 drop-shadow-md">
+            <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-slate-900 dark:text-white mb-2 shadow-white/50 dark:shadow-black/50 drop-shadow-md">
               {project.name}
             </h1>
             {project.description && (
-              <p className="text-slate-300 max-w-2xl text-sm md:text-base drop-shadow-md">
+              <p className="text-slate-700 dark:text-slate-300 max-w-2xl text-sm md:text-base drop-shadow-md">
                 {project.description}
               </p>
             )}
@@ -104,16 +104,16 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ id: s
 
       {/* Main Content Tabs */}
       <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="bg-slate-900 border border-slate-800 p-1 rounded-xl mb-6">
-          <TabsTrigger value="overview" className="rounded-lg data-[state=active]:bg-slate-800 data-[state=active]:text-white text-slate-400">
+        <TabsList className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1 rounded-xl mb-6">
+          <TabsTrigger value="overview" className="rounded-lg data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-slate-800 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white text-slate-500 dark:text-slate-400">
             <LayoutList className="w-4 h-4 mr-2" />
             Overview
           </TabsTrigger>
-          <TabsTrigger value="tasks" className="rounded-lg data-[state=active]:bg-slate-800 data-[state=active]:text-white text-slate-400">
+          <TabsTrigger value="tasks" className="rounded-lg data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-slate-800 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white text-slate-500 dark:text-slate-400">
             <CheckCircle2 className="w-4 h-4 mr-2" />
             Tasks
           </TabsTrigger>
-          <TabsTrigger value="settings" className="rounded-lg data-[state=active]:bg-slate-800 data-[state=active]:text-white text-slate-400">
+          <TabsTrigger value="settings" className="rounded-lg data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-slate-800 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white text-slate-500 dark:text-slate-400">
             <Settings className="w-4 h-4 mr-2" />
             Settings
           </TabsTrigger>
@@ -121,18 +121,18 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ id: s
 
         <TabsContent value="overview" className="space-y-6 focus-visible:outline-none focus-visible:ring-0">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card className="bg-slate-900 border-slate-800 md:col-span-2">
+            <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 md:col-span-2">
               <CardHeader>
-                <CardTitle className="text-white">Project Progress</CardTitle>
-                <CardDescription className="text-slate-400">Current completion status</CardDescription>
+                <CardTitle className="text-slate-900 dark:text-white">Project Progress</CardTitle>
+                <CardDescription className="text-slate-500 dark:text-slate-400">Current completion status</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="flex flex-col gap-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-slate-300 font-medium">Overall Completion</span>
-                    <span className="text-blue-400 font-bold">{project.progress}%</span>
+                    <span className="text-slate-700 dark:text-slate-300 font-medium">Overall Completion</span>
+                    <span className="text-blue-600 dark:text-blue-400 font-bold">{project.progress}%</span>
                   </div>
-                  <div className="h-3 w-full bg-slate-950 rounded-full overflow-hidden border border-slate-800">
+                  <div className="h-3 w-full bg-slate-100 dark:bg-slate-950 rounded-full overflow-hidden border border-slate-200 dark:border-slate-800">
                     <div 
                       className={`h-full ${project.color} transition-all duration-1000 ease-out rounded-full`}
                       style={{ width: `${project.progress}%` }}
@@ -142,28 +142,28 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ id: s
               </CardContent>
             </Card>
 
-            <Card className="bg-slate-900 border-slate-800">
+            <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
               <CardHeader>
-                <CardTitle className="text-white">Quick Stats</CardTitle>
+                <CardTitle className="text-slate-900 dark:text-white">Quick Stats</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center gap-4 p-3 rounded-lg bg-slate-950 border border-slate-800">
-                  <div className="p-2 rounded-md bg-blue-500/10 text-blue-400">
+                <div className="flex items-center gap-4 p-3 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                  <div className="p-2 rounded-md bg-blue-100 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400">
                     <CheckCircle2 className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-slate-400">Total Tasks</p>
-                    <p className="text-xl font-bold text-white">{project.tasks}</p>
+                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Total Tasks</p>
+                    <p className="text-xl font-bold text-slate-900 dark:text-white">{project.tasks}</p>
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-4 p-3 rounded-lg bg-slate-950 border border-slate-800">
-                  <div className="p-2 rounded-md bg-orange-500/10 text-orange-400">
+                <div className="flex items-center gap-4 p-3 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                  <div className="p-2 rounded-md bg-orange-100 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400">
                     <Clock className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-slate-400">Status</p>
-                    <p className="text-lg font-bold text-white">{project.status}</p>
+                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Status</p>
+                    <p className="text-lg font-bold text-slate-900 dark:text-white">{project.status}</p>
                   </div>
                 </div>
               </CardContent>
@@ -172,21 +172,21 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ id: s
         </TabsContent>
 
         <TabsContent value="tasks" className="focus-visible:outline-none focus-visible:ring-0">
-          <Card className="bg-slate-900 border-slate-800 border-dashed">
+          <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 border-dashed">
             <CardContent className="flex flex-col items-center justify-center h-64 text-center">
-              <CheckCircle2 className="w-12 h-12 text-slate-700 mb-4" />
-              <h3 className="text-lg font-medium text-white mb-2">Task Management Coming Soon</h3>
-              <p className="text-slate-400 max-w-sm">We are building a powerful task management system for you to organize your work within this project.</p>
+              <CheckCircle2 className="w-12 h-12 text-slate-400 dark:text-slate-700 mb-4" />
+              <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-2">Task Management Coming Soon</h3>
+              <p className="text-slate-500 dark:text-slate-400 max-w-sm">We are building a powerful task management system for you to organize your work within this project.</p>
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="settings" className="focus-visible:outline-none focus-visible:ring-0">
-          <Card className="bg-slate-900 border-slate-800 border-dashed">
+          <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 border-dashed">
             <CardContent className="flex flex-col items-center justify-center h-64 text-center">
-              <Settings className="w-12 h-12 text-slate-700 mb-4" />
-              <h3 className="text-lg font-medium text-white mb-2">Project Settings Coming Soon</h3>
-              <p className="text-slate-400 max-w-sm">You will soon be able to edit project details, manage members, and configure integrations here.</p>
+              <Settings className="w-12 h-12 text-slate-400 dark:text-slate-700 mb-4" />
+              <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-2">Project Settings Coming Soon</h3>
+              <p className="text-slate-500 dark:text-slate-400 max-w-sm">You will soon be able to edit project details, manage members, and configure integrations here.</p>
             </CardContent>
           </Card>
         </TabsContent>

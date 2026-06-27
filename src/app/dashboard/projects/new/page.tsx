@@ -104,37 +104,37 @@ export default function NewProjectPage() {
       <title>New Project | Projectify</title>
 
       <div>
-        <Link href="/dashboard/projects" className="inline-flex items-center text-sm font-medium text-slate-400 hover:text-white transition-colors mb-4">
+        <Link href="/dashboard/projects" className="inline-flex items-center text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors mb-4">
           <ArrowLeft className="w-4 h-4 mr-1" />
           Back to Projects
         </Link>
-        <h1 className="text-3xl font-bold tracking-tight text-white mb-2">Create New Project</h1>
-        <p className="text-slate-400">Set up a new project in {activeWorkspace?.name || "your workspace"}.</p>
+        <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white mb-2">Create New Project</h1>
+        <p className="text-slate-500 dark:text-slate-400">Set up a new project in {activeWorkspace?.name || "your workspace"}.</p>
       </div>
 
-      <Card className="bg-slate-900 border-slate-800">
+      <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
         <CardHeader>
-          <CardTitle className="text-white">Project Details</CardTitle>
-          <CardDescription className="text-slate-400">Fill out the information below to create a project.</CardDescription>
+          <CardTitle className="text-slate-900 dark:text-white">Project Details</CardTitle>
+          <CardDescription className="text-slate-500 dark:text-slate-400">Fill out the information below to create a project.</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleCreate} className="space-y-6">
             <div className="space-y-3">
-              <Label className="text-slate-300">Project Cover Image (Google Drive)</Label>
-              <div className="border-2 border-dashed border-slate-700 bg-slate-950/50 rounded-lg p-6 flex flex-col items-center justify-center transition-colors hover:bg-slate-950">
+              <Label className="text-slate-700 dark:text-slate-300">Project Cover Image (Google Drive)</Label>
+              <div className="border-2 border-dashed border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/50 rounded-lg p-6 flex flex-col items-center justify-center transition-colors hover:bg-slate-100 dark:hover:bg-slate-950">
                 {imageFile ? (
                   <div className="flex flex-col items-center gap-2">
-                    <div className="w-16 h-16 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400">
+                    <div className="w-16 h-16 rounded-lg bg-blue-100 dark:bg-blue-500/20 flex items-center justify-center text-blue-600 dark:text-blue-400">
                       <ImageIcon className="w-8 h-8" />
                     </div>
-                    <span className="text-sm text-slate-300">{imageFile.name}</span>
-                    <button type="button" onClick={() => setImageFile(null)} className="text-xs text-red-400 hover:text-red-300">Remove</button>
+                    <span className="text-sm text-slate-700 dark:text-slate-300">{imageFile.name}</span>
+                    <button type="button" onClick={() => setImageFile(null)} className="text-xs text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300">Remove</button>
                   </div>
                 ) : (
                   <>
-                    <Upload className="w-8 h-8 text-slate-500 mb-2" />
-                    <p className="text-sm text-slate-400 mb-4 text-center">Drag and drop an image, or click to browse</p>
-                    <Label className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg font-medium transition-colors cursor-pointer text-sm">
+                    <Upload className="w-8 h-8 text-slate-400 dark:text-slate-500 mb-2" />
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mb-4 text-center">Drag and drop an image, or click to browse</p>
+                    <Label className="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-900 dark:text-white px-4 py-2 rounded-lg font-medium transition-colors cursor-pointer text-sm">
                       Select Image
                       <Input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
                     </Label>
@@ -145,25 +145,25 @@ export default function NewProjectPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-3">
-                <Label htmlFor="name" className="text-slate-300">Project Name</Label>
+                <Label htmlFor="name" className="text-slate-700 dark:text-slate-300">Project Name</Label>
                 <Input
                   id="name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. Website Redesign"
-                  className="bg-slate-950 border-slate-700 text-white"
+                  className="bg-transparent dark:bg-slate-950 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
                   autoFocus
                   required
                 />
               </div>
 
               <div className="space-y-3">
-                <Label htmlFor="status" className="text-slate-300">Initial Status</Label>
+                <Label htmlFor="status" className="text-slate-700 dark:text-slate-300">Initial Status</Label>
                 <Select value={status} onValueChange={(val) => setStatus(val as ProjectStatus)}>
-                  <SelectTrigger className="bg-slate-950 border-slate-700 text-white">
+                  <SelectTrigger className="bg-transparent dark:bg-slate-950 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white">
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
-                  <SelectContent className="bg-slate-900 border-slate-800 text-slate-200">
+                  <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-200">
                     <SelectItem value="Planning">Planning</SelectItem>
                     <SelectItem value="Active">Active</SelectItem>
                     <SelectItem value="In Progress">In Progress</SelectItem>
@@ -174,33 +174,33 @@ export default function NewProjectPage() {
             </div>
 
             <div className="space-y-3">
-              <Label htmlFor="deadline" className="text-slate-300">Deadline (Optional)</Label>
+              <Label htmlFor="deadline" className="text-slate-700 dark:text-slate-300">Deadline (Optional)</Label>
               <Input
                 id="deadline"
                 type="date"
                 value={deadline}
                 onChange={(e) => setDeadline(e.target.value)}
-                className="bg-slate-950 border-slate-700 text-white"
+                className="bg-transparent dark:bg-slate-950 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
               />
             </div>
 
             <div className="space-y-3">
-              <Label htmlFor="description" className="text-slate-300">Description (Optional)</Label>
+              <Label htmlFor="description" className="text-slate-700 dark:text-slate-300">Description (Optional)</Label>
               <Textarea
                 id="description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Briefly describe what this project is about..."
                 rows={3}
-                className="bg-slate-950 border-slate-700 text-white resize-none"
+                className="bg-transparent dark:bg-slate-950 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white resize-none"
               />
             </div>
 
-            <div className="pt-4 border-t border-slate-800 flex justify-end gap-3">
+            <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex justify-end gap-3">
               <Button
                 type="button"
                 variant="ghost"
-                className="text-slate-300 hover:text-white hover:bg-slate-800"
+                className="text-slate-500 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800"
                 onClick={() => router.push("/dashboard/projects")}
               >
                 Cancel
