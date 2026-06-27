@@ -73,7 +73,8 @@ export default function NotificationsPage() {
   }
 
   return (
-    <div className="w-full max-w-3xl mx-auto px-4 py-8 flex flex-col gap-6">
+    <div className="w-full 
+     px-4 py-8 flex flex-col gap-6">
       <title>Notifications | Projectify</title>
 
       {/* Header */}

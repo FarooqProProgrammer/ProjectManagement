@@ -100,7 +100,7 @@ export default function NewProjectPage() {
   };
 
   return (
-    <div className="flex flex-col gap-8 w-full max-w-3xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="flex flex-col gap-8 w-full  animate-in fade-in slide-in-from-bottom-4 duration-700">
       <title>New Project | Projectify</title>
 
       <div>

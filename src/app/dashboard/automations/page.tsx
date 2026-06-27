@@ -187,7 +187,7 @@ export default function AutomationsPage() {
   // ---------------------------------------------------------------------------
   if (wsLoading || loading) {
     return (
-      <div className="flex flex-col gap-8 max-w-5xl mx-auto w-full p-8">
+      <div className="flex flex-col gap-8  w-full p-8">
         <title>Automations | Projectify</title>
         <div className="space-y-2">
           <Skeleton className="h-9 w-64" />
@@ -232,7 +232,7 @@ export default function AutomationsPage() {
   // Render
   // ---------------------------------------------------------------------------
   return (
-    <div className="flex flex-col gap-8 max-w-5xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="flex flex-col gap-8  w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
       <title>Automations | Projectify</title>
 
       {/* Page header */}

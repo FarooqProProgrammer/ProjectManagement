@@ -293,7 +293,7 @@ export default function Home() {
         </section>
 
         {/* ── Company logos strip ── */}
-        <section className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <section className="w-full  px-4 sm:px-6 lg:px-8 py-16">
           <p className="text-center text-xs uppercase tracking-widest text-slate-600 mb-8">Trusted by engineering and product teams at</p>
           <div className="flex flex-wrap justify-center items-center gap-x-12 gap-y-4">
             {["Vercel", "Linear", "Stripe", "Notion", "Figma", "Loom"].map((name) => (
@@ -385,7 +385,7 @@ export default function Home() {
         </section>
 
         {/* ── How it works ── */}
-        <section className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+        <section className="w-full  px-4 sm:px-6 lg:px-8 py-20">
           <div className="text-center mb-16">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs text-slate-400 mb-4">
               How it works
@@ -490,7 +490,7 @@ export default function Home() {
         </section>
 
         {/* ── Pricing ── */}
-        <section id="pricing" className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+        <section id="pricing" className="w-full  px-4 sm:px-6 lg:px-8 py-20">
           <div className="text-center mb-16">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs text-slate-400 mb-4">
               Pricing
@@ -598,7 +598,7 @@ export default function Home() {
         </section>
 
         {/* ── CTA ── */}
-        <section className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-20 pb-32">
+        <section className="w-full  px-4 sm:px-6 lg:px-8 py-20 pb-32">
           <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-blue-900/30 via-purple-900/30 to-slate-900/50 border border-white/10 p-12 md:p-20 text-center flex flex-col items-center">
             {/* Grid texture */}
             <div
