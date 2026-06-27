@@ -79,6 +79,14 @@ export const getTasksByWorkspace = async (workspaceId: string): Promise<Task[]> 
 
 export const updateTaskStatus = async (taskId: string, status: TaskStatus): Promise<void> => {
   const taskRef = doc(db, "tasks", taskId);
+  
+  // Fetch task for automations
+  const taskSnap = await getDoc(taskRef);
+  let taskObj = null;
+  if (taskSnap.exists()) {
+    taskObj = { id: taskSnap.id, ...taskSnap.data() } as Task;
+  }
+
   await updateDoc(taskRef, { status });
 
   if (auth.currentUser) {
@@ -89,10 +97,29 @@ export const updateTaskStatus = async (taskId: string, status: TaskStatus): Prom
       console.error(e);
     }
   }
+
+  // Trigger automations
+  if (taskObj) {
+    try {
+      const { evaluateAutomations } = await import('./automation');
+      // Pass the updated task object for future chaining
+      await evaluateAutomations({ ...taskObj, status }, 'status_equals', status);
+    } catch (e) {
+      console.error("Automations error:", e);
+    }
+  }
 };
 
 export const updateTaskPriority = async (taskId: string, priority: TaskPriority): Promise<void> => {
   const taskRef = doc(db, "tasks", taskId);
+  
+  // Fetch task for automations
+  const taskSnap = await getDoc(taskRef);
+  let taskObj = null;
+  if (taskSnap.exists()) {
+    taskObj = { id: taskSnap.id, ...taskSnap.data() } as Task;
+  }
+
   await updateDoc(taskRef, { priority });
 
   if (auth.currentUser) {
@@ -101,6 +128,16 @@ export const updateTaskPriority = async (taskId: string, priority: TaskPriority)
       await createActivityLog(taskId, auth.currentUser.uid, 'Priority updated', `Set to ${priority}`);
     } catch (e) {
       console.error(e);
+    }
+  }
+
+  // Trigger automations
+  if (taskObj) {
+    try {
+      const { evaluateAutomations } = await import('./automation');
+      await evaluateAutomations({ ...taskObj, priority }, 'priority_equals', priority);
+    } catch (e) {
+      console.error("Automations error:", e);
     }
   }
 };
