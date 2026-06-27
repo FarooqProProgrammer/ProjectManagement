@@ -13,7 +13,29 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Activity, CheckCircle2, Clock, ListTodo } from "lucide-react";
+import { Activity, CheckCircle2, Clock, ListTodo, PieChart as PieChartIcon } from "lucide-react";
+
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement,
+} from 'chart.js';
+import { Doughnut, Pie, Bar } from 'react-chartjs-2';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement
+);
 
 export default function DashboardOverview() {
   const [user, setUser] = useState<User | null>(null);
@@ -65,6 +87,50 @@ export default function DashboardOverview() {
     .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
     .slice(0, 5);
 
+  const reviewTasks = tasks.filter(t => t.status === "Review").length;
+  const todoTasks = tasks.filter(t => t.status === "To Do").length;
+
+  const statusData = {
+    labels: ['To Do', 'In Progress', 'Review', 'Done'],
+    datasets: [
+      {
+        data: [todoTasks, inProgressTasks, reviewTasks, completedTasks],
+        backgroundColor: [
+          'rgba(203, 213, 225, 0.8)', // slate-300
+          'rgba(167, 139, 250, 0.8)', // purple-400
+          'rgba(96, 165, 250, 0.8)', // blue-400
+          'rgba(52, 211, 153, 0.8)', // emerald-400
+        ],
+        borderColor: [
+          'rgba(203, 213, 225, 1)',
+          'rgba(167, 139, 250, 1)',
+          'rgba(96, 165, 250, 1)',
+          'rgba(52, 211, 153, 1)',
+        ],
+        borderWidth: 1,
+      },
+    ],
+  };
+
+  const highPriority = tasks.filter(t => t.priority === "High").length;
+  const medPriority = tasks.filter(t => t.priority === "Medium").length;
+  const lowPriority = tasks.filter(t => t.priority === "Low").length;
+
+  const priorityData = {
+    labels: ['High', 'Medium', 'Low'],
+    datasets: [
+      {
+        data: [highPriority, medPriority, lowPriority],
+        backgroundColor: [
+          'rgba(248, 113, 113, 0.8)', // red-400
+          'rgba(251, 191, 36, 0.8)', // amber-400
+          'rgba(148, 163, 184, 0.8)', // slate-400
+        ],
+        borderWidth: 0,
+      },
+    ],
+  };
+
   const getProjectName = (projectId: string) => {
     if (!projectId) return "Workspace";
     return projects.find(p => p.id === projectId)?.name || "Unknown Project";
@@ -104,16 +170,22 @@ export default function DashboardOverview() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
         <Card className="col-span-4 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
           <CardHeader>
-            <CardTitle className="text-slate-900 dark:text-white">Recent Activity</CardTitle>
+            <CardTitle className="text-slate-900 dark:text-white flex items-center gap-2">
+              <PieChartIcon className="w-5 h-5 text-indigo-500" />
+              Task Breakdown
+            </CardTitle>
             <CardDescription className="text-slate-500 dark:text-slate-400">
-              Your team's activity over the past 7 days.
+              Visualize your workspace's current task distribution.
             </CardDescription>
           </CardHeader>
-          <CardContent className="h-[300px] flex items-center justify-center border-t border-slate-100 dark:border-slate-800/50 mt-2">
-             {/* Placeholder for a chart */}
-             <div className="flex flex-col items-center gap-2">
-               <Activity className="w-8 h-8 text-slate-300 dark:text-slate-700" />
-               <p className="text-slate-400 dark:text-slate-500 text-sm">Activity chart will appear here</p>
+          <CardContent className="flex flex-col md:flex-row items-center justify-around border-t border-slate-100 dark:border-slate-800/50 pt-6">
+             <div className="w-48 h-48 flex flex-col items-center">
+                <h3 className="text-sm font-medium text-slate-500 mb-2">By Status</h3>
+                <Pie data={statusData} options={{ plugins: { legend: { display: false } } }} />
+             </div>
+             <div className="w-48 h-48 flex flex-col items-center mt-8 md:mt-0">
+                <h3 className="text-sm font-medium text-slate-500 mb-2">By Priority</h3>
+                <Doughnut data={priorityData} options={{ plugins: { legend: { display: false } }, cutout: '70%' }} />
              </div>
           </CardContent>
         </Card>

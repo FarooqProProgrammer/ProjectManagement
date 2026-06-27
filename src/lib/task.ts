@@ -32,6 +32,7 @@ export interface Task {
   assigneeId?: string;
   dueDate?: string;
   subtasks?: Subtask[];
+  estimatedHours?: number;
   createdAt?: any;
 }
 
@@ -170,6 +171,20 @@ export const updateTaskAssignee = async (taskId: string, assigneeId: string | nu
     try {
       const { createActivityLog } = await import('./activity');
       await createActivityLog(taskId, auth.currentUser.uid, 'Assignee updated', assigneeId ? 'Assigned to a member' : 'Unassigned');
+    } catch (e) {
+      console.error(e);
+    }
+  }
+};
+
+export const updateTaskEstimatedHours = async (taskId: string, estimatedHours: number): Promise<void> => {
+  const taskRef = doc(db, "tasks", taskId);
+  await updateDoc(taskRef, { estimatedHours });
+
+  if (auth.currentUser) {
+    try {
+      const { createActivityLog } = await import('./activity');
+      await createActivityLog(taskId, auth.currentUser.uid, 'Estimated hours updated', `Set to ${estimatedHours} hours`);
     } catch (e) {
       console.error(e);
     }

@@ -13,7 +13,8 @@ import {
   UserCircle,
   CalendarDays,
   Bell,
-  Zap
+  Zap,
+  Briefcase
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -56,6 +57,7 @@ const navigation = [
   { name: "Projects", href: "/dashboard/projects", icon: KanbanSquare },
   { name: "Calendar", href: "/dashboard/calendar", icon: CalendarDays },
   { name: "My Tasks", href: "/dashboard/tasks", icon: CheckSquare },
+  { name: "Team Workload", href: "/dashboard/team", icon: Briefcase },
   { name: "Automations", href: "/dashboard/automations", icon: Zap },
   { name: "Notifications", href: "/dashboard/notifications", icon: Bell },
   { name: "Settings", href: "/dashboard/settings", icon: Settings },

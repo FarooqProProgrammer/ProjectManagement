@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { TaskDetailModal } from "@/components/TaskDetailModal";
-import { CheckCircle2, Clock, MoreVertical, Plus, Trash2, Calendar, GripVertical } from "lucide-react";
+import { CheckCircle2, Clock, MoreVertical, Plus, Trash2, Calendar, GripVertical, Search, Filter } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 const DragDropContext = dynamic(() => import("@hello-pangea/dnd").then(mod => mod.DragDropContext), { ssr: false });
 const Droppable = dynamic(() => import("@hello-pangea/dnd").then(mod => mod.Droppable), { ssr: false });
@@ -38,6 +38,11 @@ export default function TasksPage() {
 
   // Selected Task state for Modal
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+
+  // Filter state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [assigneeFilter, setAssigneeFilter] = useState("all");
+  const [priorityFilter, setPriorityFilter] = useState("all");
 
   useEffect(() => {
     if (!activeWorkspace) return;
@@ -139,6 +144,19 @@ export default function TasksPage() {
     if (!id) return "bg-slate-700";
     return projectMap.get(id)?.color || "bg-slate-700";
   };
+
+  const filteredTasks = useMemo(() => {
+    return tasks.filter(task => {
+      const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                            (task.description?.toLowerCase().includes(searchQuery.toLowerCase()));
+      const matchesAssignee = assigneeFilter === "all" || 
+                              (assigneeFilter === "unassigned" && !task.assigneeId) ||
+                              task.assigneeId === assigneeFilter;
+      const matchesPriority = priorityFilter === "all" || task.priority === priorityFilter;
+
+      return matchesSearch && matchesAssignee && matchesPriority;
+    });
+  }, [tasks, searchQuery, assigneeFilter, priorityFilter]);
 
   const columns: { title: string; status: TaskStatus; icon: any }[] = [
     { title: "To Do", status: "To Do", icon: Clock },
@@ -283,6 +301,56 @@ export default function TasksPage() {
         </Dialog>
       </div>
 
+      {/* Filter Bar */}
+      <div className="flex flex-col md:flex-row gap-4 bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <Input 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search tasks..." 
+            className="pl-9 bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800"
+          />
+        </div>
+        
+        <div className="flex gap-4">
+          <div className="w-40">
+            <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
+              <SelectTrigger className="bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800">
+                <div className="flex items-center gap-2">
+                  <Filter className="w-3 h-3" />
+                  <SelectValue placeholder="Assignee" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Members</SelectItem>
+                <SelectItem value="unassigned">Unassigned</SelectItem>
+                {members.map(m => (
+                  <SelectItem key={m.uid} value={m.uid}>{m.displayName}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="w-40">
+            <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+              <SelectTrigger className="bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800">
+                <div className="flex items-center gap-2">
+                  <Filter className="w-3 h-3" />
+                  <SelectValue placeholder="Priority" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Priorities</SelectItem>
+                <SelectItem value="High">High</SelectItem>
+                <SelectItem value="Medium">Medium</SelectItem>
+                <SelectItem value="Low">Low</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
+
       {loading ? (
         <div className="flex h-64 items-center justify-center">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div>
@@ -301,7 +369,7 @@ export default function TasksPage() {
                     <h3 className="font-semibold text-slate-900 dark:text-white">{column.title}</h3>
                   </div>
                   <span className="bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold px-2.5 py-0.5 rounded-full">
-                    {tasks.filter(t => t.status === column.status).length}
+                    {filteredTasks.filter(t => t.status === column.status).length}
                   </span>
                 </div>
                 
@@ -312,7 +380,7 @@ export default function TasksPage() {
                       {...provided.droppableProps}
                       className={`flex-1 p-3 overflow-y-auto space-y-3 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800 scrollbar-track-transparent ${snapshot.isDraggingOver ? 'bg-slate-200/50 dark:bg-slate-800/20' : ''}`}
                     >
-                      {tasks
+                      {filteredTasks
                         .filter((t) => t.status === column.status)
                         .map((task, index) => (
                           <Draggable key={task.id} draggableId={task.id} index={index}>
@@ -415,7 +483,7 @@ export default function TasksPage() {
                         ))}
                       {provided.placeholder}
                       
-                      {tasks.filter((t) => t.status === column.status).length === 0 && (
+                      {filteredTasks.filter((t) => t.status === column.status).length === 0 && (
                         <div className="h-24 border-2 border-dashed border-slate-200/50 dark:border-slate-800/50 rounded-lg flex items-center justify-center text-slate-400 dark:text-slate-500 text-sm">
                           Drop tasks here
                         </div>

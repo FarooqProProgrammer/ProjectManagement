@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Task, Subtask, updateTaskSubtasks } from "@/lib/task";
+import { Task, Subtask, updateTaskSubtasks, updateTaskEstimatedHours } from "@/lib/task";
 import { Comment, getCommentsByTask, addComment, deleteComment } from "@/lib/comment";
 import { TimeLog, getTimeLogsByTask, addTimeLog, deleteTimeLog } from "@/lib/time";
 import { ActivityLog, getActivityLogsByTask } from "@/lib/activity";
@@ -27,6 +27,7 @@ export function TaskDetailModal({ task, isOpen, onClose, memberMap, onTaskUpdate
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [newSubtaskTitle, setNewSubtaskTitle] = useState("");
   const [priority, setPriority] = useState<"Low" | "Medium" | "High">(task?.priority || "Medium");
+  const [estimatedHours, setEstimatedHours] = useState<string>(task?.estimatedHours?.toString() || "");
 
   const [timeLogs, setTimeLogs] = useState<TimeLog[]>([]);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
@@ -39,6 +40,7 @@ export function TaskDetailModal({ task, isOpen, onClose, memberMap, onTaskUpdate
   useEffect(() => {
     if (task) {
       setPriority(task.priority || "Medium");
+      setEstimatedHours(task.estimatedHours?.toString() || "");
     }
   }, [task]);
 
@@ -193,6 +195,18 @@ export function TaskDetailModal({ task, isOpen, onClose, memberMap, onTaskUpdate
     }
   };
 
+  const handleEstimatedHoursChange = async (val: string) => {
+    setEstimatedHours(val);
+    const parsed = parseFloat(val);
+    if (!task) return;
+    try {
+      await updateTaskEstimatedHours(task.id, isNaN(parsed) ? 0 : parsed);
+      onTaskUpdated({ ...task, estimatedHours: isNaN(parsed) ? 0 : parsed });
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   if (!task) return null;
 
   const completedSubtasks = task.subtasks?.filter(s => s.isCompleted).length || 0;
@@ -212,21 +226,38 @@ export function TaskDetailModal({ task, isOpen, onClose, memberMap, onTaskUpdate
               {task.description}
             </DialogDescription>
           )}
-          <div className="mt-4 flex items-center gap-2">
-            <span className="text-sm font-medium text-slate-500 flex items-center gap-1">
-              <Flag className="w-4 h-4" />
-              Priority:
-            </span>
-            <Select value={priority} onValueChange={handlePriorityChange}>
-              <SelectTrigger className="text-xs w-[110px] bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Low">Low</SelectItem>
-                <SelectItem value="Medium">Medium</SelectItem>
-                <SelectItem value="High">High</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="mt-4 flex items-center gap-6">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-slate-500 flex items-center gap-1">
+                <Flag className="w-4 h-4" />
+                Priority:
+              </span>
+              <Select value={priority} onValueChange={handlePriorityChange}>
+                <SelectTrigger className="text-xs w-[110px] bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Low">Low</SelectItem>
+                  <SelectItem value="Medium">Medium</SelectItem>
+                  <SelectItem value="High">High</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-slate-500 flex items-center gap-1">
+                <Clock className="w-4 h-4" />
+                Est. Hours:
+              </span>
+              <Input 
+                type="number"
+                step="0.5"
+                min="0"
+                value={estimatedHours}
+                onChange={(e) => handleEstimatedHoursChange(e.target.value)}
+                placeholder="e.g. 5"
+                className="text-xs h-8 w-[110px] bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800"
+              />
+            </div>
           </div>
         </DialogHeader>
 
