@@ -14,7 +14,13 @@ import {
   CalendarDays,
   Bell,
   Zap,
-  Briefcase
+  Briefcase,
+  BarChart3,
+  Layers,
+  FileText,
+  Timer,
+  Inbox,
+  Target,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -45,6 +51,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -52,8 +59,9 @@ import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ThemeToggle } from "./ThemeToggle";
+import { getUserNotifications } from "@/lib/notification";
 
 const navigation = [
   { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
@@ -63,6 +71,12 @@ const navigation = [
   { name: "Team Workload", href: "/dashboard/team", icon: Briefcase },
   { name: "Automations", href: "/dashboard/automations", icon: Zap },
   { name: "Notifications", href: "/dashboard/notifications", icon: Bell },
+  { name: "Reports", href: "/dashboard/reports", icon: BarChart3 },
+  { name: "Sprints", href: "/dashboard/sprints", icon: Layers },
+  { name: "Docs", href: "/dashboard/docs", icon: FileText },
+  { name: "Time Tracking", href: "/dashboard/time-tracking", icon: Timer },
+  { name: "Inbox", href: "/dashboard/inbox", icon: Inbox },
+  { name: "Goals", href: "/dashboard/goals", icon: Target },
   { name: "Settings", href: "/dashboard/settings", icon: Settings },
   { name: "Profile", href: "/dashboard/profile", icon: UserCircle },
 ];
@@ -74,6 +88,19 @@ export function AppSidebar() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newWorkspaceName, setNewWorkspaceName] = useState("");
   const [isCreating, setIsCreating] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    const currentUser = auth.currentUser;
+    if (!currentUser) return;
+
+    getUserNotifications(currentUser.uid).then((notifications) => {
+      const unread = notifications.filter((n) => !n.isRead).length;
+      setUnreadCount(unread);
+    }).catch((err) => {
+      console.error("Failed to fetch notifications:", err);
+    });
+  }, []);
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -205,7 +232,14 @@ export function AppSidebar() {
                     <SidebarMenuButton asChild isActive={isActive} className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 data-[active=true]:bg-blue-100 dark:data-[active=true]:bg-blue-600/20 data-[active=true]:text-blue-700 dark:data-[active=true]:text-blue-400">
                       <Link href={item.href}>
                         <item.icon className="w-4 h-4 mr-2" />
-                        <span>{item.name}</span>
+                        <span className="flex items-center gap-2">
+                          {item.name}
+                          {item.name === "Notifications" && unreadCount > 0 && (
+                            <Badge className="ml-1 h-4 min-w-4 px-1 text-[10px] leading-none bg-blue-600 text-white hover:bg-blue-600">
+                              {unreadCount}
+                            </Badge>
+                          )}
+                        </span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
