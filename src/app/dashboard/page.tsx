@@ -3,6 +3,9 @@
 import { useState, useEffect } from "react";
 import { onAuthStateChanged, User } from "firebase/auth";
 import { auth } from "@/lib/firebase";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
+import { getWorkspaceProjects, Project } from "@/lib/project";
+import { getTasksByWorkspace, Task } from "@/lib/task";
 import {
   Card,
   CardContent,
@@ -14,6 +17,10 @@ import { Activity, CheckCircle2, Clock, ListTodo } from "lucide-react";
 
 export default function DashboardOverview() {
   const [user, setUser] = useState<User | null>(null);
+  const { activeWorkspace } = useWorkspace();
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -21,6 +28,47 @@ export default function DashboardOverview() {
     });
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (!activeWorkspace) {
+      setProjects([]);
+      setTasks([]);
+      setLoading(false);
+      return;
+    }
+
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        const [fetchedProjects, fetchedTasks] = await Promise.all([
+          getWorkspaceProjects(activeWorkspace.id),
+          getTasksByWorkspace(activeWorkspace.id)
+        ]);
+        setProjects(fetchedProjects);
+        setTasks(fetchedTasks);
+      } catch (error) {
+        console.error("Error loading dashboard data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadData();
+  }, [activeWorkspace]);
+
+  const pendingTasks = tasks.filter(t => t.status !== "Done").length;
+  const completedTasks = tasks.filter(t => t.status === "Done").length;
+  const inProgressTasks = tasks.filter(t => t.status === "In Progress").length;
+
+  const upcomingTasks = [...tasks]
+    .filter(t => t.dueDate && t.status !== "Done")
+    .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+    .slice(0, 5);
+
+  const getProjectName = (projectId: string) => {
+    if (!projectId) return "Workspace";
+    return projects.find(p => p.id === projectId)?.name || "Unknown Project";
+  };
 
   return (
     <div className="flex flex-col gap-8 max-w-6xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -34,10 +82,10 @@ export default function DashboardOverview() {
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {[
-          { title: "Total Projects", value: "12", icon: Activity, color: "text-blue-400" },
-          { title: "Tasks Pending", value: "24", icon: Clock, color: "text-yellow-400" },
-          { title: "Completed", value: "128", icon: CheckCircle2, color: "text-green-400" },
-          { title: "To Review", value: "4", icon: ListTodo, color: "text-purple-400" },
+          { title: "Total Projects", value: projects.length.toString(), icon: Activity, color: "text-blue-500" },
+          { title: "Tasks Pending", value: pendingTasks.toString(), icon: Clock, color: "text-yellow-500" },
+          { title: "Completed", value: completedTasks.toString(), icon: CheckCircle2, color: "text-green-500" },
+          { title: "In Progress", value: inProgressTasks.toString(), icon: ListTodo, color: "text-purple-500" },
         ].map((stat, i) => (
           <Card key={i} className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 backdrop-blur-xl">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -79,19 +127,23 @@ export default function DashboardOverview() {
           </CardHeader>
           <CardContent className="border-t border-slate-100 dark:border-slate-800/50 pt-6">
             <div className="space-y-6">
-              {[
-                { title: "Design System Updates", project: "Projectify V2", time: "Tomorrow, 2:00 PM" },
-                { title: "User Research Synthesis", project: "Mobile App", time: "Tomorrow, 5:00 PM" },
-                { title: "Fix Authentication Bug", project: "Projectify V2", time: "Friday, 10:00 AM" },
-              ].map((task, i) => (
-                <div key={i} className="flex items-center gap-4">
-                  <div className="w-2 h-2 mt-1 rounded-full bg-blue-500 shrink-0"></div>
-                  <div className="flex flex-col gap-1">
-                    <p className="text-sm font-medium leading-none text-slate-900 dark:text-white">{task.title}</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">{task.project} • {task.time}</p>
+              {loading ? (
+                <p className="text-sm text-slate-500 dark:text-slate-400">Loading deadlines...</p>
+              ) : upcomingTasks.length > 0 ? (
+                upcomingTasks.map((task) => (
+                  <div key={task.id} className="flex items-center gap-4">
+                    <div className="w-2 h-2 mt-1 rounded-full bg-blue-500 shrink-0"></div>
+                    <div className="flex flex-col gap-1">
+                      <p className="text-sm font-medium leading-none text-slate-900 dark:text-white">{task.title}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        {getProjectName(task.projectId)} • Due: {new Date(task.dueDate).toLocaleDateString()}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-sm text-slate-500 dark:text-slate-400">No upcoming deadlines! Great job.</p>
+              )}
             </div>
           </CardContent>
         </Card>

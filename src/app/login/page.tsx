@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
 import { auth } from "@/lib/firebase";
+import { syncUserToFirestore } from "@/lib/user";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -19,7 +20,8 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      await syncUserToFirestore(userCredential.user);
       router.push("/");
     } catch (err: any) {
       setError(err.message || "Failed to log in.");
@@ -43,6 +45,7 @@ export default function LoginPage() {
         sessionStorage.setItem("googleAccessToken", credential.accessToken);
       }
       
+      await syncUserToFirestore(result.user);
       router.push("/");
     } catch (err: any) {
       setError(err.message || "Failed to sign in with Google.");

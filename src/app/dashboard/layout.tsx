@@ -30,7 +30,7 @@ export default function DashboardLayout({
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-950">
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-950">
         <div className="w-8 h-8 rounded-full border-4 border-blue-500 border-t-transparent animate-spin"></div>
       </div>
     );
@@ -39,12 +39,12 @@ export default function DashboardLayout({
   return (
     <WorkspaceProvider>
       <SidebarProvider>
-        <div className="flex min-h-screen w-full bg-slate-950 font-sans text-slate-200">
+        <div className="flex min-h-screen w-full bg-slate-50 dark:bg-slate-950 font-sans text-slate-900 dark:text-slate-200">
           <AppSidebar />
           <main className="flex-1 overflow-y-auto flex flex-col relative w-full">
             {/* Top navigation / header area for the dashboard content */}
-            <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b border-slate-800 bg-slate-950/80 px-6 backdrop-blur-xl">
-              <SidebarTrigger className="text-slate-400 hover:text-white" />
+            <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-950/80 px-6 backdrop-blur-xl">
+              <SidebarTrigger className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white" />
               <div className="flex-1"></div>
               {/* Can add search or notifications here */}
             </header>

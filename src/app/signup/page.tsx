@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createUserWithEmailAndPassword, updateProfile, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
 import { auth } from "@/lib/firebase";
+import { syncUserToFirestore } from "@/lib/user";
 
 export default function SignupPage() {
   const [name, setName] = useState("");
@@ -23,7 +24,9 @@ export default function SignupPage() {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       if (name) {
         await updateProfile(userCredential.user, { displayName: name });
+        userCredential.user.displayName = name; // Update local object before syncing
       }
+      await syncUserToFirestore(userCredential.user);
       router.push("/");
     } catch (err: any) {
       setError(err.message || "Failed to sign up.");
@@ -46,6 +49,7 @@ export default function SignupPage() {
         sessionStorage.setItem("googleAccessToken", credential.accessToken);
       }
       
+      await syncUserToFirestore(result.user);
       router.push("/");
     } catch (err: any) {
       setError(err.message || "Failed to sign up with Google.");
