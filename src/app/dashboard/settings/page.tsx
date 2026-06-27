@@ -2,20 +2,23 @@
 
 import { useState, useEffect } from "react";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
-import { inviteMemberToWorkspace, updateMemberRole, removeMemberFromWorkspace, WorkspaceRole } from "@/lib/workspace";
-import { getUserByEmail, getUsersByIds, UserProfile } from "@/lib/user";
+import { updateMemberRole, removeMemberFromWorkspace, WorkspaceRole } from "@/lib/workspace";
+import { getUsersByIds, UserProfile } from "@/lib/user";
+import { createInviteLink } from "@/lib/invite";
 import { auth } from "@/lib/firebase";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { UserPlus, Shield, User, Trash2 } from "lucide-react";
+import { UserPlus, Shield, User, Trash2, Link as LinkIcon, Copy, Check } from "lucide-react";
 
 export default function WorkspaceSettingsPage() {
   const { activeWorkspace, loading: wsLoading } = useWorkspace();
-  const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<WorkspaceRole>("member");
+  const [expiresIn, setExpiresIn] = useState<number>(7);
   const [isInviting, setIsInviting] = useState(false);
+  const [generatedLink, setGeneratedLink] = useState("");
+  const [isCopied, setIsCopied] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   
@@ -40,33 +43,32 @@ export default function WorkspaceSettingsPage() {
     fetchMembers();
   }, [activeWorkspace?.members]);
 
-  const handleInvite = async (e: React.FormEvent) => {
+  const handleGenerateLink = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!activeWorkspace) return;
+    if (!activeWorkspace || !auth.currentUser) return;
     setError("");
     setSuccess("");
+    setGeneratedLink("");
+    setIsCopied(false);
     setIsInviting(true);
 
     try {
-      const user = await getUserByEmail(inviteEmail);
-      if (!user) {
-        throw new Error(`No user found with email ${inviteEmail}. They must sign up for Projectify first.`);
-      }
-      
-      if (activeWorkspace.members.includes(user.uid)) {
-        throw new Error(`${user.displayName} is already a member of this workspace.`);
-      }
-
-      await inviteMemberToWorkspace(activeWorkspace.id, user.uid, inviteRole);
-      setSuccess(`Successfully added ${user.displayName} to the workspace!`);
-      setInviteEmail("");
-      
-      setMembers([...members, user]);
+      const inviteId = await createInviteLink(activeWorkspace.id, inviteRole, expiresIn, auth.currentUser.uid);
+      const link = `${window.location.origin}/invite/${inviteId}`;
+      setGeneratedLink(link);
+      setSuccess("Invite link generated successfully!");
     } catch (err: any) {
-      setError(err.message || "Failed to invite user.");
+      setError(err.message || "Failed to generate invite link.");
     } finally {
       setIsInviting(false);
     }
+  };
+
+  const copyToClipboard = () => {
+    if (!generatedLink) return;
+    navigator.clipboard.writeText(generatedLink);
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000);
   };
 
   const handleRoleChange = async (userId: string, newRole: WorkspaceRole) => {
@@ -126,29 +128,12 @@ export default function WorkspaceSettingsPage() {
               <CardDescription>Add someone to this workspace.</CardDescription>
             </CardHeader>
             <CardContent>
-              {!isAdmin ? (
-                <div className="text-sm text-yellow-600 dark:text-yellow-500 bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg border border-yellow-200 dark:border-yellow-800">
-                  Only Workspace Admins can invite new members.
-                </div>
-              ) : (
-                <form onSubmit={handleInvite} className="space-y-4">
+              <form onSubmit={handleGenerateLink} className="space-y-4">
                   {error && <div className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">{error}</div>}
                   {success && <div className="text-sm text-green-500 bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">{success}</div>}
                   
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Email Address</label>
-                    <Input
-                      type="email"
-                      required
-                      placeholder="teammate@example.com"
-                      value={inviteEmail}
-                      onChange={(e) => setInviteEmail(e.target.value)}
-                      className="bg-slate-50 dark:bg-slate-950"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Role</label>
+                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Role for new members</label>
                     <Select value={inviteRole} onValueChange={(val) => setInviteRole(val as WorkspaceRole)}>
                       <SelectTrigger className="bg-slate-50 dark:bg-slate-950">
                         <SelectValue />
@@ -160,12 +145,38 @@ export default function WorkspaceSettingsPage() {
                       </SelectContent>
                     </Select>
                   </div>
+                  
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Link expires in</label>
+                    <Select value={expiresIn.toString()} onValueChange={(val) => setExpiresIn(parseInt(val))}>
+                      <SelectTrigger className="bg-slate-50 dark:bg-slate-950">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">1 Day</SelectItem>
+                        <SelectItem value="7">7 Days</SelectItem>
+                        <SelectItem value="30">30 Days</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
                   <Button type="submit" disabled={isInviting} className="w-full bg-blue-600 hover:bg-blue-700">
-                    {isInviting ? "Inviting..." : "Send Invite"}
+                    <LinkIcon className="w-4 h-4 mr-2" />
+                    {isInviting ? "Generating..." : "Generate Link"}
                   </Button>
                 </form>
-              )}
+
+                {generatedLink && (
+                  <div className="mt-4 p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg">
+                    <p className="text-xs font-medium text-slate-500 mb-2">Share this link with your team:</p>
+                    <div className="flex gap-2">
+                      <Input readOnly value={generatedLink} className="h-9 text-xs" />
+                      <Button onClick={copyToClipboard} size="icon" className="h-9 flex-shrink-0" variant={isCopied ? "default" : "secondary"}>
+                        {isCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                      </Button>
+                    </div>
+                  </div>
+                )}
             </CardContent>
           </Card>
         </div>

@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
+import dynamic from "next/dynamic";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { getTasksByWorkspace, createTask, updateTaskStatus, deleteTask, Task, TaskStatus } from "@/lib/task";
 import { getWorkspaceProjects, Project } from "@/lib/project";
@@ -12,9 +13,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { TaskDetailModal } from "@/components/TaskDetailModal";
 import { CheckCircle2, Clock, MoreVertical, Plus, Trash2, Calendar, GripVertical } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+const DragDropContext = dynamic(() => import("@hello-pangea/dnd").then(mod => mod.DragDropContext), { ssr: false });
+const Droppable = dynamic(() => import("@hello-pangea/dnd").then(mod => mod.Droppable), { ssr: false });
+const Draggable = dynamic(() => import("@hello-pangea/dnd").then(mod => mod.Draggable), { ssr: false });
 
 export default function TasksPage() {
   const { activeWorkspace } = useWorkspace();
@@ -31,6 +35,9 @@ export default function TasksPage() {
   const [projectId, setProjectId] = useState("none");
   const [dueDate, setDueDate] = useState("");
   const [assigneeId, setAssigneeId] = useState("none");
+
+  // Selected Task state for Modal
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
   useEffect(() => {
     if (!activeWorkspace) return;
@@ -70,7 +77,7 @@ export default function TasksPage() {
         dueDate,
         assigneeId === "none" ? undefined : assigneeId
       );
-      setTasks([...tasks, newTask]);
+      setTasks(prev => [...prev, newTask]);
       setIsDialogOpen(false);
       setTitle("");
       setDescription("");
@@ -87,7 +94,7 @@ export default function TasksPage() {
   const handleStatusChange = async (taskId: string, newStatus: TaskStatus) => {
     try {
       // Optimistic update
-      setTasks(tasks.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
+      setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
       await updateTaskStatus(taskId, newStatus);
     } catch (error) {
       console.error(error);
@@ -101,21 +108,36 @@ export default function TasksPage() {
 
   const handleDeleteTask = async (taskId: string) => {
     try {
-      setTasks(tasks.filter(t => t.id !== taskId));
+      setTasks(prev => prev.filter(t => t.id !== taskId));
       await deleteTask(taskId);
+      if (selectedTask?.id === taskId) {
+        setSelectedTask(null);
+      }
     } catch (error) {
       console.error(error);
     }
   };
 
+  const projectMap = useMemo(() => {
+    const map = new Map<string, Project>();
+    projects.forEach(p => map.set(p.id, p));
+    return map;
+  }, [projects]);
+
+  const memberMap = useMemo(() => {
+    const map = new Map<string, UserProfile>();
+    members.forEach(m => map.set(m.uid, m));
+    return map;
+  }, [members]);
+
   const getProjectName = (id: string) => {
     if (!id) return "Workspace";
-    return projects.find(p => p.id === id)?.name || "Unknown Project";
+    return projectMap.get(id)?.name || "Unknown Project";
   };
 
   const getProjectColor = (id: string) => {
     if (!id) return "bg-slate-700";
-    return projects.find(p => p.id === id)?.color || "bg-slate-700";
+    return projectMap.get(id)?.color || "bg-slate-700";
   };
 
   const columns: { title: string; status: TaskStatus; icon: any }[] = [
@@ -299,12 +321,14 @@ export default function TasksPage() {
                                 ref={provided.innerRef}
                                 {...provided.draggableProps}
                                 {...provided.dragHandleProps}
-                                className={`bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 transition-colors shadow-sm group ${snapshot.isDragging ? 'shadow-xl shadow-blue-500/10 border-blue-500 dark:border-slate-700 z-50' : 'hover:border-blue-400 dark:hover:border-slate-700'}`}
+                                onClick={() => setSelectedTask(task)}
+                                className={`bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 transition-colors shadow-sm group cursor-pointer ${snapshot.isDragging ? 'shadow-xl shadow-blue-500/10 border-blue-500 dark:border-slate-700 z-50' : 'hover:border-blue-400 dark:hover:border-slate-700'}`}
                               >
                                 <CardContent className="p-4">
                                   <div className="flex justify-between items-start gap-2 mb-2">
                                     <h4 className="font-medium text-slate-900 dark:text-white text-sm leading-snug">{task.title}</h4>
-                                    <DropdownMenu>
+                                    <div onClick={e => e.stopPropagation()}>
+                                      <DropdownMenu>
                                       <DropdownMenuTrigger asChild>
                                         <button className="text-slate-400 dark:text-slate-600 hover:text-slate-900 dark:hover:text-white transition-colors p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 -mt-1 -mr-1">
                                           <MoreVertical className="w-4 h-4" />
@@ -334,6 +358,7 @@ export default function TasksPage() {
                                         </DropdownMenuItem>
                                       </DropdownMenuContent>
                                     </DropdownMenu>
+                                    </div>
                                   </div>
                                   
                                   {task.description && (
@@ -343,11 +368,21 @@ export default function TasksPage() {
                                   )}
                                   
                                   <div className="flex items-center justify-between mt-3">
-                                    <div className="flex items-center gap-1.5">
+                                    <div className="flex items-center gap-1.5 flex-wrap">
                                       <div className={`w-2 h-2 rounded-full ${getProjectColor(task.projectId)}`} />
                                       <span className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-[100px]">
                                         {getProjectName(task.projectId)}
                                       </span>
+                                      
+                                      {task.priority && (
+                                        <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium border ${
+                                          task.priority === 'High' ? 'bg-red-50 text-red-600 border-red-200 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20' :
+                                          task.priority === 'Medium' ? 'bg-yellow-50 text-yellow-600 border-yellow-200 dark:bg-yellow-500/10 dark:text-yellow-400 dark:border-yellow-500/20' :
+                                          'bg-slate-50 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'
+                                        }`}>
+                                          {task.priority}
+                                        </span>
+                                      )}
                                     </div>
                                     
                                     {task.dueDate && (
@@ -357,17 +392,17 @@ export default function TasksPage() {
                                       </span>
                                     )}
 
-                                    {task.assigneeId && members.find(m => m.uid === task.assigneeId) && (
-                                      <div className="flex items-center ml-2" title={members.find(m => m.uid === task.assigneeId)?.displayName}>
-                                        {members.find(m => m.uid === task.assigneeId)?.photoURL ? (
+                                    {task.assigneeId && memberMap.has(task.assigneeId) && (
+                                      <div className="flex items-center ml-2" title={memberMap.get(task.assigneeId)?.displayName}>
+                                        {memberMap.get(task.assigneeId)?.photoURL ? (
                                           <img 
-                                            src={members.find(m => m.uid === task.assigneeId)?.photoURL!} 
+                                            src={memberMap.get(task.assigneeId)?.photoURL!} 
                                             alt="Assignee" 
                                             className="w-5 h-5 rounded-full object-cover border border-white dark:border-slate-800" 
                                           />
                                         ) : (
                                           <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center text-[10px] text-white font-bold border border-white dark:border-slate-800">
-                                            {members.find(m => m.uid === task.assigneeId)?.displayName?.charAt(0).toUpperCase()}
+                                            {memberMap.get(task.assigneeId)?.displayName?.charAt(0).toUpperCase()}
                                           </div>
                                         )}
                                       </div>
@@ -393,6 +428,17 @@ export default function TasksPage() {
           </div>
         </DragDropContext>
       )}
+
+      <TaskDetailModal 
+        task={selectedTask} 
+        isOpen={!!selectedTask} 
+        onClose={() => setSelectedTask(null)}
+        memberMap={memberMap}
+        onTaskUpdated={(updatedTask) => {
+          setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
+          setSelectedTask(updatedTask);
+        }}
+      />
     </div>
   );
 }

@@ -10,7 +10,9 @@ import {
   LogOut,
   ChevronsUpDown,
   Plus,
-  UserCircle
+  UserCircle,
+  CalendarDays,
+  Bell
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -51,8 +53,10 @@ import { ThemeToggle } from "./ThemeToggle";
 const navigation = [
   { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
   { name: "Projects", href: "/dashboard/projects", icon: KanbanSquare },
-  { name: "Settings", href: "/dashboard/settings", icon: Settings },
+  { name: "Calendar", href: "/dashboard/calendar", icon: CalendarDays },
   { name: "My Tasks", href: "/dashboard/tasks", icon: CheckSquare },
+  { name: "Notifications", href: "/dashboard/notifications", icon: Bell },
+  { name: "Settings", href: "/dashboard/settings", icon: Settings },
   { name: "Profile", href: "/dashboard/profile", icon: UserCircle },
 ];
 
