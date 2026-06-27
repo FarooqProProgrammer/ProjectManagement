@@ -54,6 +54,7 @@ const TRIGGER_LABELS: Record<TriggerType, string> = {
 const ACTION_LABELS: Record<ActionType, string> = {
   assign_user: "Assign To Member",
   set_priority: "Set Priority To",
+  set_status: "Set Status To",
 };
 
 // ---------------------------------------------------------------------------
