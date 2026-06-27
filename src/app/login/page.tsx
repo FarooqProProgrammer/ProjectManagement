@@ -32,8 +32,17 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
     const provider = new GoogleAuthProvider();
+    provider.addScope("https://www.googleapis.com/auth/drive.file");
+    
     try {
-      await signInWithPopup(auth, provider);
+      const result = await signInWithPopup(auth, provider);
+      
+      // Extract Google Access Token for Drive API calls
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      if (credential && credential.accessToken) {
+        sessionStorage.setItem("googleAccessToken", credential.accessToken);
+      }
+      
       router.push("/");
     } catch (err: any) {
       setError(err.message || "Failed to sign in with Google.");

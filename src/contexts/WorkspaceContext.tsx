@@ -34,6 +34,16 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
             const savedId = localStorage.getItem("activeWorkspaceId");
             const found = userWs.find(w => w.id === savedId);
             setActiveWorkspace(found || userWs[0]);
+          } else {
+            const defaultWsName = currentUser.displayName ? `${currentUser.displayName.split(' ')[0]}'s Workspace` : "My Workspace";
+            const newWs = await createWorkspace(defaultWsName, currentUser.uid);
+            
+            // Auto-create a default project for the new workspace
+            const { createProject } = await import("@/lib/project");
+            await createProject(newWs.id, "My First Project", "Active");
+            
+            setWorkspaces([newWs]);
+            setActiveWorkspace(newWs);
           }
         } catch (error) {
           console.error("Failed to load workspaces:", error);

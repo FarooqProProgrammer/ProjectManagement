@@ -6,6 +6,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
+import { WorkspaceProvider } from "@/contexts/WorkspaceContext";
 
 export default function DashboardLayout({
   children,
@@ -36,22 +37,24 @@ export default function DashboardLayout({
   }
 
   return (
-    <SidebarProvider>
-      <div className="flex min-h-screen w-full bg-slate-950 font-sans text-slate-200">
-        <AppSidebar />
-        <main className="flex-1 overflow-y-auto flex flex-col relative w-full">
-          {/* Top navigation / header area for the dashboard content */}
-          <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b border-slate-800 bg-slate-950/80 px-6 backdrop-blur-xl">
-            <SidebarTrigger className="text-slate-400 hover:text-white" />
-            <div className="flex-1"></div>
-            {/* Can add search or notifications here */}
-          </header>
-          
-          <div className="p-6 md:p-8 flex-1">
-            {children}
-          </div>
-        </main>
-      </div>
-    </SidebarProvider>
+    <WorkspaceProvider>
+      <SidebarProvider>
+        <div className="flex min-h-screen w-full bg-slate-950 font-sans text-slate-200">
+          <AppSidebar />
+          <main className="flex-1 overflow-y-auto flex flex-col relative w-full">
+            {/* Top navigation / header area for the dashboard content */}
+            <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b border-slate-800 bg-slate-950/80 px-6 backdrop-blur-xl">
+              <SidebarTrigger className="text-slate-400 hover:text-white" />
+              <div className="flex-1"></div>
+              {/* Can add search or notifications here */}
+            </header>
+            
+            <div className="p-6 md:p-8 flex-1">
+              {children}
+            </div>
+          </main>
+        </div>
+      </SidebarProvider>
+    </WorkspaceProvider>
   );
 }
