@@ -1,5 +1,11 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
+import Header from "@/components/Header";
+
+export const metadata: Metadata = {
+  title: "Home",
+};
 
 export default function Home() {
   return (
@@ -10,27 +16,7 @@ export default function Home() {
         <div className="absolute top-[20%] -right-[10%] w-[40%] h-[40%] rounded-full bg-purple-600/20 blur-[100px]" />
       </div>
 
-      <header className="relative z-10 flex items-center justify-between px-8 py-6 max-w-7xl w-full mx-auto">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center font-bold text-white shadow-lg">
-            P
-          </div>
-          <span className="font-semibold text-xl tracking-tight">Projectify</span>
-        </div>
-        <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-300">
-          <Link href="#features" className="hover:text-white transition-colors">Features</Link>
-          <Link href="#solutions" className="hover:text-white transition-colors">Solutions</Link>
-          <Link href="#pricing" className="hover:text-white transition-colors">Pricing</Link>
-        </nav>
-        <div className="flex items-center gap-4">
-          <Link href="/login" className="text-sm font-medium text-slate-300 hover:text-white transition-colors">
-            Log in
-          </Link>
-          <Link href="/signup" className="text-sm font-medium bg-white text-black px-4 py-2 rounded-full hover:bg-slate-200 transition-all hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.3)]">
-            Get Started
-          </Link>
-        </div>
-      </header>
+      <Header />
 
       <main className="relative z-10 flex-1 flex flex-col items-center justify-center max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-32">
         
