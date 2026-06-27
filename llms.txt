@@ -1,0 +1,30 @@
+---
+title: Project Management App
+description: A modern project management application built to manage workspaces, tasks, and team collaborations.
+version: 0.1.0
+framework: Next.js 16 (App Router)
+---
+
+# Project Management App
+
+## Description
+A modern project management application built to manage workspaces, tasks, and team collaborations. It includes features like task automation, drag-and-drop task organization, dashboards with charts, and real-time updates.
+
+## Tech Stack
+- **Framework**: Next.js 16.2.9 (App Router)
+- **Library**: React 19.2.4
+- **Database / Backend**: Firebase 12.15.0 (Firestore, Authentication, Hosting, etc.)
+- **Styling**: Tailwind CSS v4, Lucide React (Icons), `next-themes` (Dark Mode)
+- **UI Components**: Shadcn UI, Radix UI, Base UI
+- **Data Visualization**: Chart.js (`react-chartjs-2`), Recharts
+- **Drag & Drop**: `@hello-pangea/dnd`
+
+## Structure
+- `/src/app` - Next.js App Router pages and layouts.
+- `/src/lib` - Firebase configurations, helper functions, and data models (e.g., `automation.ts`, `task.ts`, `firebase.ts`).
+- `/src/components` - Reusable UI components.
+
+## Guidelines
+- This project uses standard Next.js App Router conventions.
+- Firebase handles backend functionality (Auth and Firestore).
+- Styles are handled through standard Tailwind v4 utility classes.
