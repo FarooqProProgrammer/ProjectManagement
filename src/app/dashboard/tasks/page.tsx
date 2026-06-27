@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { getTasksByWorkspace, createTask, updateTaskStatus, deleteTask, Task, TaskStatus } from "@/lib/task";
 import { getWorkspaceProjects, Project } from "@/lib/project";
+import { getUsersByIds, UserProfile } from "@/lib/user";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +20,7 @@ export default function TasksPage() {
   const { activeWorkspace } = useWorkspace();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [members, setMembers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   
   // New Task state
@@ -28,6 +30,7 @@ export default function TasksPage() {
   const [description, setDescription] = useState("");
   const [projectId, setProjectId] = useState("none");
   const [dueDate, setDueDate] = useState("");
+  const [assigneeId, setAssigneeId] = useState("none");
 
   useEffect(() => {
     if (!activeWorkspace) return;
@@ -35,12 +38,14 @@ export default function TasksPage() {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [fetchedTasks, fetchedProjects] = await Promise.all([
+        const [fetchedTasks, fetchedProjects, fetchedMembers] = await Promise.all([
           getTasksByWorkspace(activeWorkspace.id),
-          getWorkspaceProjects(activeWorkspace.id)
+          getWorkspaceProjects(activeWorkspace.id),
+          getUsersByIds(activeWorkspace.members)
         ]);
         setTasks(fetchedTasks);
         setProjects(fetchedProjects);
+        setMembers(fetchedMembers);
       } catch (error) {
         console.error("Error fetching tasks data:", error);
       } finally {
@@ -62,7 +67,8 @@ export default function TasksPage() {
         projectId === "none" ? "" : projectId,
         title,
         description,
-        dueDate
+        dueDate,
+        assigneeId === "none" ? undefined : assigneeId
       );
       setTasks([...tasks, newTask]);
       setIsDialogOpen(false);
@@ -70,6 +76,7 @@ export default function TasksPage() {
       setDescription("");
       setProjectId("none");
       setDueDate("");
+      setAssigneeId("none");
     } catch (error) {
       console.error(error);
     } finally {
@@ -215,6 +222,21 @@ export default function TasksPage() {
               </div>
 
               <div className="space-y-2">
+                <Label htmlFor="assignee" className="text-slate-700 dark:text-slate-300">Assignee</Label>
+                <Select value={assigneeId} onValueChange={setAssigneeId}>
+                  <SelectTrigger className="bg-transparent dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white">
+                    <SelectValue placeholder="Unassigned" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white max-h-48">
+                    <SelectItem value="none">Unassigned</SelectItem>
+                    {members.map((m) => (
+                      <SelectItem key={m.uid} value={m.uid}>{m.displayName}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="description" className="text-slate-700 dark:text-slate-300">Description (Optional)</Label>
                 <Textarea
                   id="description"
@@ -333,6 +355,22 @@ export default function TasksPage() {
                                         <Calendar className="w-3 h-3 mr-1" />
                                         {new Date(task.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                                       </span>
+                                    )}
+
+                                    {task.assigneeId && members.find(m => m.uid === task.assigneeId) && (
+                                      <div className="flex items-center ml-2" title={members.find(m => m.uid === task.assigneeId)?.displayName}>
+                                        {members.find(m => m.uid === task.assigneeId)?.photoURL ? (
+                                          <img 
+                                            src={members.find(m => m.uid === task.assigneeId)?.photoURL!} 
+                                            alt="Assignee" 
+                                            className="w-5 h-5 rounded-full object-cover border border-white dark:border-slate-800" 
+                                          />
+                                        ) : (
+                                          <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center text-[10px] text-white font-bold border border-white dark:border-slate-800">
+                                            {members.find(m => m.uid === task.assigneeId)?.displayName?.charAt(0).toUpperCase()}
+                                          </div>
+                                        )}
+                                      </div>
                                     )}
                                   </div>
                                 </CardContent>

@@ -9,7 +9,8 @@ import {
   Settings,
   LogOut,
   ChevronsUpDown,
-  Plus
+  Plus,
+  UserCircle
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -50,8 +51,9 @@ import { ThemeToggle } from "./ThemeToggle";
 const navigation = [
   { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
   { name: "Projects", href: "/dashboard/projects", icon: KanbanSquare },
-  { name: "My Tasks", href: "/dashboard/tasks", icon: CheckSquare },
   { name: "Settings", href: "/dashboard/settings", icon: Settings },
+  { name: "My Tasks", href: "/dashboard/tasks", icon: CheckSquare },
+  { name: "Profile", href: "/dashboard/profile", icon: UserCircle },
 ];
 
 export function AppSidebar() {
