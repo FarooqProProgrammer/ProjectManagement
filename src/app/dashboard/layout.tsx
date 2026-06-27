@@ -7,6 +7,10 @@ import { auth } from "@/lib/firebase";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { WorkspaceProvider } from "@/contexts/WorkspaceContext";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { Bell, Search } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export default function DashboardLayout({
   children,
@@ -30,8 +34,10 @@ export default function DashboardLayout({
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-950">
-        <div className="w-8 h-8 rounded-full border-4 border-blue-500 border-t-transparent animate-spin"></div>
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background">
+        <Skeleton className="h-10 w-10 rounded-full" />
+        <Skeleton className="h-4 w-40 rounded" />
+        <p className="text-sm text-muted-foreground">Loading your workspace…</p>
       </div>
     );
   }
@@ -39,19 +45,37 @@ export default function DashboardLayout({
   return (
     <WorkspaceProvider>
       <SidebarProvider>
-        <div className="flex min-h-screen w-full bg-slate-50 dark:bg-slate-950 font-sans text-slate-900 dark:text-slate-200">
+        <div
+          className={cn(
+            "flex min-h-screen w-full font-sans",
+            "text-foreground"
+          )}
+        >
           <AppSidebar />
-          <main className="flex-1 overflow-y-auto flex flex-col relative w-full">
-            {/* Top navigation / header area for the dashboard content */}
-            <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-950/80 px-6 backdrop-blur-xl">
-              <SidebarTrigger className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white" />
-              <div className="flex-1"></div>
-              {/* Can add search or notifications here */}
+          <main className="flex flex-1 flex-col overflow-y-auto relative w-full bg-muted/20">
+            <header
+              className={cn(
+                "sticky top-0 z-10 flex h-16 items-center gap-4",
+                "border-b border-border",
+                "bg-background/80 backdrop-blur",
+                "px-6"
+              )}
+            >
+              <SidebarTrigger className="text-muted-foreground hover:text-foreground" />
+
+              <div className="flex-1" />
+
+              <div className="flex items-center gap-1">
+                <Button variant="ghost" size="icon" aria-label="Search">
+                  <Search className="h-5 w-5" />
+                </Button>
+                <Button variant="ghost" size="icon" aria-label="Notifications">
+                  <Bell className="h-5 w-5" />
+                </Button>
+              </div>
             </header>
-            
-            <div className="p-6 md:p-8 flex-1">
-              {children}
-            </div>
+
+            <div className="p-6 md:p-8 flex-1">{children}</div>
           </main>
         </div>
       </SidebarProvider>

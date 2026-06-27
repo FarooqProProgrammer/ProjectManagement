@@ -2,12 +2,54 @@
 
 import { useEffect, useState, use } from "react";
 import { getProject, Project } from "@/lib/project";
-import { ArrowLeft, Calendar, CheckCircle2, Clock, Folder, Settings, LayoutList } from "lucide-react";
+import {
+  ArrowLeft,
+  Calendar,
+  CheckCircle2,
+  Clock,
+  Construction,
+  Folder,
+  LayoutList,
+  Settings,
+} from "lucide-react";
 import Link from "next/link";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-export default function ProjectDetailsPage({ params }: { params: Promise<{ id: string }> }) {
+function statusVariant(
+  status: string
+): "default" | "secondary" | "outline" | "destructive" {
+  switch (status?.toLowerCase()) {
+    case "active":
+    case "in progress":
+      return "default";
+    case "completed":
+      return "secondary";
+    case "on hold":
+      return "destructive";
+    default:
+      return "outline";
+  }
+}
+
+export default function ProjectDetailsPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const { id } = use(params);
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
@@ -29,10 +71,15 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ id: s
 
   if (loading) {
     return (
-      <div className="flex h-[50vh] items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div>
-          <p className="text-slate-400">Loading project details...</p>
+      <div className="flex flex-col w-full h-full gap-8">
+        {/* Banner skeleton */}
+        <Skeleton className="w-full h-48 rounded-2xl" />
+        {/* Tabs skeleton */}
+        <Skeleton className="w-72 h-10 rounded-xl" />
+        {/* Cards skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Skeleton className="md:col-span-2 h-40 rounded-xl" />
+          <Skeleton className="h-40 rounded-xl" />
         </div>
       </div>
     );
@@ -41,11 +88,16 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ id: s
   if (!project) {
     return (
       <div className="flex h-[50vh] flex-col items-center justify-center gap-4">
-        <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Project not found</h2>
-        <p className="text-slate-500 dark:text-slate-400">The project you're looking for doesn't exist or you don't have access.</p>
-        <Link href="/dashboard/projects" className="text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300">
-          Return to Projects
-        </Link>
+        <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+          Project not found
+        </h2>
+        <p className="text-slate-500 dark:text-slate-400">
+          The project you&apos;re looking for doesn&apos;t exist or you
+          don&apos;t have access.
+        </p>
+        <Button variant="ghost" asChild>
+          <Link href="/dashboard/projects">Return to Projects</Link>
+        </Button>
       </div>
     );
   }
@@ -57,40 +109,57 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ id: s
       {/* Header Banner */}
       <div className="relative w-full rounded-2xl overflow-hidden bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 mb-8 shadow-xl">
         {project.imageUrl ? (
-          <div 
+          <div
             className="h-48 w-full bg-cover bg-center"
             style={{ backgroundImage: `url(${project.imageUrl})` }}
           >
             <div className="absolute inset-0 bg-gradient-to-t from-white dark:from-slate-900 to-transparent opacity-80 dark:opacity-100" />
           </div>
         ) : (
-          <div className={`h-48 w-full bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900 flex items-center justify-center`}>
-            <Folder className={`w-24 h-24 ${project.color.replace('bg-', 'text-')} opacity-20`} />
+          <div className="h-48 w-full bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-100 dark:from-slate-800 dark:via-blue-900/30 dark:to-indigo-900/40 flex items-center justify-center">
+            <Folder
+              className={`w-24 h-24 ${project.color.replace(
+                "bg-",
+                "text-"
+              )} opacity-20`}
+            />
             <div className="absolute inset-0 bg-gradient-to-t from-white dark:from-slate-900 to-transparent opacity-80 dark:opacity-100" />
           </div>
         )}
 
+        {/* Back button */}
         <div className="absolute top-4 left-4 z-10">
-          <Link href="/dashboard/projects" className="inline-flex items-center px-3 py-1.5 rounded-full bg-white/60 dark:bg-black/40 backdrop-blur-md text-sm font-medium text-slate-900 dark:text-white hover:bg-white/80 dark:hover:bg-black/60 transition-colors border border-slate-200/50 dark:border-white/10">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Projects
-          </Link>
+          <Button
+            variant="ghost"
+            size="sm"
+            asChild
+            className="bg-white/60 dark:bg-black/40 backdrop-blur-md border border-slate-200/50 dark:border-white/10 hover:bg-white/80 dark:hover:bg-black/60 rounded-full"
+          >
+            <Link href="/dashboard/projects">
+              <ArrowLeft className="w-4 h-4 mr-1" />
+              Projects
+            </Link>
+          </Button>
         </div>
 
+        {/* Project info overlay */}
         <div className="absolute bottom-0 left-0 w-full p-6 md:p-8 flex flex-col md:flex-row md:items-end justify-between gap-4 z-10">
           <div>
-            <div className="flex items-center gap-3 mb-2">
-              <span className="px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400 text-xs font-semibold uppercase tracking-wider border border-blue-200 dark:border-blue-500/20">
+            <div className="flex items-center gap-3 mb-2 flex-wrap">
+              <Badge
+                variant={statusVariant(project.status)}
+                className="uppercase tracking-wider text-xs"
+              >
                 {project.status}
-              </span>
+              </Badge>
               {project.deadline && (
-                <span className="flex items-center text-xs font-medium text-slate-700 dark:text-slate-300 bg-white/60 dark:bg-black/40 px-3 py-1 rounded-full border border-slate-200/50 dark:border-white/10 backdrop-blur-md">
-                  <Calendar className="w-3 h-3 mr-1.5" />
+                <Badge variant="outline" className="gap-1.5 text-xs">
+                  <Calendar className="w-3 h-3" />
                   Due: {new Date(project.deadline).toLocaleDateString()}
-                </span>
+                </Badge>
               )}
             </div>
-            <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-slate-900 dark:text-white mb-2 shadow-white/50 dark:shadow-black/50 drop-shadow-md">
+            <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-slate-900 dark:text-white mb-2 drop-shadow-md">
               {project.name}
             </h1>
             {project.description && (
@@ -102,49 +171,68 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ id: s
         </div>
       </div>
 
+      <Separator className="mb-6" />
+
       {/* Main Content Tabs */}
       <Tabs defaultValue="overview" className="w-full">
         <TabsList className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1 rounded-xl mb-6">
-          <TabsTrigger value="overview" className="rounded-lg data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-slate-800 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white text-slate-500 dark:text-slate-400">
+          <TabsTrigger
+            value="overview"
+            className="rounded-lg data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-slate-800 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white text-slate-500 dark:text-slate-400"
+          >
             <LayoutList className="w-4 h-4 mr-2" />
             Overview
           </TabsTrigger>
-          <TabsTrigger value="tasks" className="rounded-lg data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-slate-800 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white text-slate-500 dark:text-slate-400">
+          <TabsTrigger
+            value="tasks"
+            className="rounded-lg data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-slate-800 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white text-slate-500 dark:text-slate-400"
+          >
             <CheckCircle2 className="w-4 h-4 mr-2" />
             Tasks
           </TabsTrigger>
-          <TabsTrigger value="settings" className="rounded-lg data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-slate-800 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white text-slate-500 dark:text-slate-400">
+          <TabsTrigger
+            value="settings"
+            className="rounded-lg data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-slate-800 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white text-slate-500 dark:text-slate-400"
+          >
             <Settings className="w-4 h-4 mr-2" />
             Settings
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="space-y-6 focus-visible:outline-none focus-visible:ring-0">
+        {/* Overview Tab */}
+        <TabsContent
+          value="overview"
+          className="space-y-6 focus-visible:outline-none focus-visible:ring-0"
+        >
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 md:col-span-2">
+            {/* Progress card */}
+            <Card className="md:col-span-2">
               <CardHeader>
-                <CardTitle className="text-slate-900 dark:text-white">Project Progress</CardTitle>
-                <CardDescription className="text-slate-500 dark:text-slate-400">Current completion status</CardDescription>
+                <CardTitle>Project Progress</CardTitle>
+                <CardDescription>Current completion status</CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="flex flex-col gap-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-700 dark:text-slate-300 font-medium">Overall Completion</span>
-                    <span className="text-blue-600 dark:text-blue-400 font-bold">{project.progress}%</span>
-                  </div>
-                  <div className="h-3 w-full bg-slate-100 dark:bg-slate-950 rounded-full overflow-hidden border border-slate-200 dark:border-slate-800">
-                    <div 
-                      className={`h-full ${project.color} transition-all duration-1000 ease-out rounded-full`}
-                      style={{ width: `${project.progress}%` }}
-                    />
-                  </div>
+              <CardContent className="space-y-3">
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-700 dark:text-slate-300 font-medium">
+                    Overall Completion
+                  </span>
+                  <span className="text-blue-600 dark:text-blue-400 font-bold">
+                    {project.progress}%
+                  </span>
                 </div>
+                <Progress value={project.progress} className="h-3" />
               </CardContent>
+              <CardFooter className="text-xs text-muted-foreground">
+                {project.progress === 100
+                  ? "Project complete"
+                  : `${100 - project.progress}% remaining`}
+              </CardFooter>
             </Card>
 
-            <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
+            {/* Quick stats card */}
+            <Card>
               <CardHeader>
-                <CardTitle className="text-slate-900 dark:text-white">Quick Stats</CardTitle>
+                <CardTitle>Quick Stats</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center gap-4 p-3 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
@@ -152,41 +240,109 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ id: s
                     <CheckCircle2 className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Total Tasks</p>
-                    <p className="text-xl font-bold text-slate-900 dark:text-white">{project.tasks}</p>
+                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                      Total Tasks
+                    </p>
+                    <p className="text-xl font-bold text-slate-900 dark:text-white">
+                      {project.tasks}
+                    </p>
                   </div>
                 </div>
-                
+
+                <Separator />
+
                 <div className="flex items-center gap-4 p-3 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
                   <div className="p-2 rounded-md bg-orange-100 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400">
                     <Clock className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Status</p>
-                    <p className="text-lg font-bold text-slate-900 dark:text-white">{project.status}</p>
+                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                      Status
+                    </p>
+                    <p className="text-lg font-bold text-slate-900 dark:text-white">
+                      {project.status}
+                    </p>
                   </div>
                 </div>
               </CardContent>
+              <CardFooter>
+                <Badge
+                  variant={statusVariant(project.status)}
+                  className="uppercase tracking-wider text-xs"
+                >
+                  {project.status}
+                </Badge>
+              </CardFooter>
             </Card>
           </div>
         </TabsContent>
 
-        <TabsContent value="tasks" className="focus-visible:outline-none focus-visible:ring-0">
-          <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 border-dashed">
-            <CardContent className="flex flex-col items-center justify-center h-64 text-center">
-              <CheckCircle2 className="w-12 h-12 text-slate-400 dark:text-slate-700 mb-4" />
-              <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-2">Task Management Coming Soon</h3>
-              <p className="text-slate-500 dark:text-slate-400 max-w-sm">We are building a powerful task management system for you to organize your work within this project.</p>
+        {/* Tasks Tab — coming soon */}
+        <TabsContent
+          value="tasks"
+          className="focus-visible:outline-none focus-visible:ring-0"
+        >
+          <Card className="border-dashed">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5 text-muted-foreground" />
+                Task Management
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Alert>
+                <Construction className="w-4 h-4" />
+                <AlertTitle>Coming Soon</AlertTitle>
+                <AlertDescription>
+                  We are building a powerful task management system for you to
+                  organize your work within this project. Check back soon!
+                </AlertDescription>
+              </Alert>
+              <div className="flex flex-col items-center justify-center py-10 text-center gap-3">
+                <CheckCircle2 className="w-12 h-12 text-muted-foreground/40" />
+                <h3 className="text-lg font-medium text-slate-900 dark:text-white">
+                  Task Management Coming Soon
+                </h3>
+                <p className="text-slate-500 dark:text-slate-400 max-w-sm text-sm">
+                  A powerful task management system is on its way to help you
+                  organize your work within this project.
+                </p>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="settings" className="focus-visible:outline-none focus-visible:ring-0">
-          <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 border-dashed">
-            <CardContent className="flex flex-col items-center justify-center h-64 text-center">
-              <Settings className="w-12 h-12 text-slate-400 dark:text-slate-700 mb-4" />
-              <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-2">Project Settings Coming Soon</h3>
-              <p className="text-slate-500 dark:text-slate-400 max-w-sm">You will soon be able to edit project details, manage members, and configure integrations here.</p>
+        {/* Settings Tab — coming soon */}
+        <TabsContent
+          value="settings"
+          className="focus-visible:outline-none focus-visible:ring-0"
+        >
+          <Card className="border-dashed">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="w-5 h-5 text-muted-foreground" />
+                Project Settings
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Alert>
+                <Construction className="w-4 h-4" />
+                <AlertTitle>Coming Soon</AlertTitle>
+                <AlertDescription>
+                  You will soon be able to edit project details, manage members,
+                  and configure integrations here.
+                </AlertDescription>
+              </Alert>
+              <div className="flex flex-col items-center justify-center py-10 text-center gap-3">
+                <Settings className="w-12 h-12 text-muted-foreground/40" />
+                <h3 className="text-lg font-medium text-slate-900 dark:text-white">
+                  Project Settings Coming Soon
+                </h3>
+                <p className="text-slate-500 dark:text-slate-400 max-w-sm text-sm">
+                  You will soon be able to edit project details, manage members,
+                  and configure integrations here.
+                </p>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

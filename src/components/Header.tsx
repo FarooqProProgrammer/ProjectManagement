@@ -30,7 +30,8 @@ export default function Header() {
   };
 
   return (
-    <header className="relative z-10 flex items-center justify-between px-8 py-6 max-w-7xl w-full mx-auto">
+    <header className="sticky top-0 z-50 w-full border-b border-white/5 bg-[#080c14]/80 backdrop-blur-xl">
+    <div className="flex items-center justify-between px-6 sm:px-8 py-4 max-w-7xl w-full mx-auto">
       <div className="flex items-center gap-2">
         <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center font-bold text-white shadow-lg">
           P
@@ -86,6 +87,7 @@ export default function Header() {
           )
         )}
       </div>
+    </div>
     </header>
   );
 }

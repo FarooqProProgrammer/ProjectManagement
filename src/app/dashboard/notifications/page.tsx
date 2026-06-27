@@ -2,9 +2,19 @@
 
 import { useState, useEffect } from "react";
 import { auth } from "@/lib/firebase";
-import { getUserNotifications, markNotificationAsRead, markAllNotificationsAsRead, Notification } from "@/lib/notification";
-import { Bell, CheckCircle2, Circle } from "lucide-react";
+import {
+  getUserNotifications,
+  markNotificationAsRead,
+  markAllNotificationsAsRead,
+  Notification,
+} from "@/lib/notification";
+import { Bell, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -31,8 +41,8 @@ export default function NotificationsPage() {
 
   const handleMarkAsRead = async (id: string) => {
     try {
-      setNotifications(prev => 
-        prev.map(n => n.id === id ? { ...n, isRead: true } : n)
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
       );
       await markNotificationAsRead(id);
     } catch (error) {
@@ -43,115 +53,154 @@ export default function NotificationsPage() {
   const handleMarkAllAsRead = async () => {
     if (!currentUser) return;
     try {
-      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
       await markAllNotificationsAsRead(currentUser.uid);
     } catch (error) {
       console.error(error);
     }
   };
 
-  const unreadCount = notifications.filter(n => !n.isRead).length;
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   if (!currentUser) {
     return (
       <div className="flex h-full items-center justify-center">
-        <p className="text-slate-500">Please sign in to view notifications.</p>
+        <p className="text-muted-foreground">
+          Please sign in to view notifications.
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-6 h-full w-full max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="w-full max-w-3xl mx-auto px-4 py-8 flex flex-col gap-6">
       <title>Notifications | Projectify</title>
-      
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-2">
+
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white mb-1 flex items-center gap-2">
-            <Bell className="w-8 h-8 text-blue-500" />
+          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
+            <Bell className="w-7 h-7 text-blue-500" />
             Notifications
             {unreadCount > 0 && (
-              <span className="bg-red-500 text-white text-sm font-bold px-2 py-0.5 rounded-full ml-2">
+              <Badge variant="destructive" className="text-sm font-bold">
                 {unreadCount}
-              </span>
+              </Badge>
             )}
           </h1>
-          <p className="text-slate-500 dark:text-slate-400">Stay up to date with your tasks and mentions.</p>
+          <p className="text-muted-foreground mt-1">
+            Stay up to date with your tasks and mentions.
+          </p>
         </div>
-        
+
         {unreadCount > 0 && (
-          <Button 
-            variant="outline" 
-            onClick={handleMarkAllAsRead}
-            className="border-blue-200 text-blue-600 hover:bg-blue-50 dark:border-blue-900 dark:text-blue-400 dark:hover:bg-blue-900/20"
-          >
+          <Button variant="outline" onClick={handleMarkAllAsRead}>
             <CheckCircle2 className="w-4 h-4 mr-2" />
             Mark all as read
           </Button>
         )}
       </div>
 
-      {loading ? (
-        <div className="flex h-64 items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div>
-        </div>
-      ) : (
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex-1">
-          {notifications.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-64 text-slate-500 dark:text-slate-400">
-              <Bell className="w-12 h-12 mb-4 opacity-20" />
-              <p>You're all caught up!</p>
+      {/* Notification list card */}
+      <Card className="overflow-hidden">
+        <Separator />
+        <CardContent className="p-0">
+          {loading ? (
+            <div className="divide-y">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="flex gap-4 p-5 items-start">
+                  <Skeleton className="h-10 w-10 rounded-full flex-shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-4 w-1/3" />
+                    <Skeleton className="h-3 w-2/3" />
+                    <Skeleton className="h-3 w-1/4" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : notifications.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 gap-3">
+              <Bell className="w-12 h-12 text-muted-foreground/30" />
+              <p className="text-muted-foreground text-sm font-medium">
+                You're all caught up!
+              </p>
             </div>
           ) : (
-            <div className="divide-y divide-slate-100 dark:divide-slate-800">
-              {notifications.map((notification) => (
-                <div 
-                  key={notification.id} 
-                  className={`p-5 flex gap-4 transition-colors ${
-                    notification.isRead 
-                      ? 'bg-transparent hover:bg-slate-50 dark:hover:bg-slate-800/50' 
-                      : 'bg-blue-50/50 hover:bg-blue-50 dark:bg-blue-950/20 dark:hover:bg-blue-950/40'
-                  }`}
+            <div>
+              {notifications.map((notification, index) => (
+                <div
+                  key={notification.id}
+                  className={[
+                    "flex gap-4 p-5 items-start transition-colors",
+                    index < notifications.length - 1 ? "border-b" : "",
+                    notification.isRead
+                      ? "bg-transparent hover:bg-muted/40"
+                      : "bg-blue-50/50 dark:bg-blue-950/20 hover:bg-blue-50/80 dark:hover:bg-blue-950/30",
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
                 >
-                  <div className="flex-shrink-0 mt-1">
-                    {notification.isRead ? (
-                      <Circle className="w-5 h-5 text-slate-300 dark:text-slate-600" />
-                    ) : (
-                      <div className="relative">
-                        <Bell className="w-5 h-5 text-blue-500" />
-                        <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full border border-white dark:border-slate-900"></span>
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div className="flex-1">
-                    <div className="flex items-start justify-between gap-4">
-                      <h4 className={`text-sm font-semibold mb-1 ${notification.isRead ? 'text-slate-700 dark:text-slate-300' : 'text-slate-900 dark:text-white'}`}>
+                  {/* Icon avatar */}
+                  <Avatar className="flex-shrink-0 h-10 w-10">
+                    <AvatarFallback
+                      className={
+                        notification.isRead
+                          ? "bg-muted text-muted-foreground"
+                          : "bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300"
+                      }
+                    >
+                      <Bell className="w-4 h-4" />
+                    </AvatarFallback>
+                  </Avatar>
+
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-3 mb-1">
+                      <h4
+                        className={`text-sm font-semibold leading-snug ${
+                          notification.isRead
+                            ? "text-muted-foreground"
+                            : "text-foreground"
+                        }`}
+                      >
                         {notification.title}
                       </h4>
-                      <span className="text-xs text-slate-400 whitespace-nowrap">
+                      <Badge
+                        variant="outline"
+                        className="text-xs whitespace-nowrap flex-shrink-0 font-normal text-muted-foreground"
+                      >
                         {new Date(notification.createdAt).toLocaleDateString()}
-                      </span>
+                      </Badge>
                     </div>
-                    <p className={`text-sm ${notification.isRead ? 'text-slate-500' : 'text-slate-700 dark:text-slate-300'}`}>
+
+                    <p
+                      className={`text-sm leading-relaxed ${
+                        notification.isRead
+                          ? "text-muted-foreground"
+                          : "text-foreground/80"
+                      }`}
+                    >
                       {notification.message}
                     </p>
-                    
+
                     {!notification.isRead && (
-                      <button 
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={() => handleMarkAsRead(notification.id)}
-                        className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 mt-2 flex items-center gap-1"
+                        className="mt-2 h-7 px-2 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20"
                       >
-                        <CheckCircle2 className="w-3 h-3" />
+                        <CheckCircle2 className="w-3 h-3 mr-1" />
                         Mark as read
-                      </button>
+                      </Button>
                     )}
                   </div>
                 </div>
               ))}
             </div>
           )}
-        </div>
-      )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

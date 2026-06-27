@@ -2,50 +2,95 @@
 
 import { useState, useEffect } from "react";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
-import { 
-  AutomationRule, 
-  getWorkspaceAutomations, 
-  createAutomation, 
-  toggleAutomation, 
+import {
+  AutomationRule,
+  getWorkspaceAutomations,
+  createAutomation,
+  toggleAutomation,
   deleteAutomation,
   TriggerType,
-  ActionType
+  ActionType,
 } from "@/lib/automation";
 import { getUsersByIds, UserProfile } from "@/lib/user";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Zap, Plus, Trash2, Power, PowerOff, ArrowRight } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { Zap, Plus, Trash2, ArrowRight } from "lucide-react";
 
+// ---------------------------------------------------------------------------
+// Helper label maps
+// ---------------------------------------------------------------------------
+const TRIGGER_LABELS: Record<TriggerType, string> = {
+  status_equals: "Status Changes To",
+  priority_equals: "Priority Changes To",
+};
+
+const ACTION_LABELS: Record<ActionType, string> = {
+  assign_user: "Assign To Member",
+  set_priority: "Set Priority To",
+};
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
 export default function AutomationsPage() {
   const { activeWorkspace, loading: wsLoading } = useWorkspace();
   const [rules, setRules] = useState<AutomationRule[]>([]);
   const [members, setMembers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // New Rule State
+  // Dialog open state
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  // New rule form state
   const [name, setName] = useState("");
   const [triggerType, setTriggerType] = useState<TriggerType>("status_equals");
   const [triggerValue, setTriggerValue] = useState("Done");
   const [actionType, setActionType] = useState<ActionType>("assign_user");
   const [actionValue, setActionValue] = useState("");
-  
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // ---------------------------------------------------------------------------
+  // Data fetching
+  // ---------------------------------------------------------------------------
   useEffect(() => {
     if (!activeWorkspace) return;
-    
+
     const fetchData = async () => {
       setLoading(true);
       try {
         const fetchedRules = await getWorkspaceAutomations(activeWorkspace.id);
         setRules(fetchedRules);
-        
+
         const fetchedMembers = await getUsersByIds(activeWorkspace.members);
         setMembers(fetchedMembers);
-        
+
         if (fetchedMembers.length > 0 && !actionValue) {
           setActionValue(fetchedMembers[0].uid);
         }
@@ -55,14 +100,33 @@ export default function AutomationsPage() {
         setLoading(false);
       }
     };
-    
+
     fetchData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeWorkspace]);
 
+  // Reset trigger value when trigger type changes
+  useEffect(() => {
+    setTriggerValue(triggerType === "status_equals" ? "Done" : "High");
+  }, [triggerType]);
+
+  // Reset action value when action type changes
+  useEffect(() => {
+    if (actionType === "assign_user") {
+      setActionValue(members[0]?.uid ?? "");
+    } else {
+      setActionValue("High");
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [actionType]);
+
+  // ---------------------------------------------------------------------------
+  // Handlers
+  // ---------------------------------------------------------------------------
   const handleCreateRule = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!activeWorkspace || !name.trim() || !triggerValue || !actionValue) return;
-    
+
     setIsSubmitting(true);
     try {
       const newRule = await createAutomation(
@@ -73,6 +137,7 @@ export default function AutomationsPage() {
       );
       setRules([newRule, ...rules]);
       setName("");
+      setDialogOpen(false);
     } catch (error) {
       console.error("Error creating rule:", error);
     } finally {
@@ -82,7 +147,7 @@ export default function AutomationsPage() {
 
   const handleToggle = async (ruleId: string, currentState: boolean) => {
     try {
-      setRules(rules.map(r => r.id === ruleId ? { ...r, isActive: !currentState } : r));
+      setRules(rules.map((r) => (r.id === ruleId ? { ...r, isActive: !currentState } : r)));
       await toggleAutomation(ruleId, !currentState);
     } catch (error) {
       console.error("Error toggling rule:", error);
@@ -92,62 +157,145 @@ export default function AutomationsPage() {
   const handleDelete = async (ruleId: string) => {
     if (!confirm("Are you sure you want to delete this automation?")) return;
     try {
-      setRules(rules.filter(r => r.id !== ruleId));
+      setRules(rules.filter((r) => r.id !== ruleId));
       await deleteAutomation(ruleId);
     } catch (error) {
       console.error("Error deleting rule:", error);
     }
   };
 
+  // ---------------------------------------------------------------------------
+  // Derived helpers
+  // ---------------------------------------------------------------------------
+  const resolveTriggerText = (rule: AutomationRule): string => {
+    if (rule.trigger.type === "status_equals") return `Status becomes ${rule.trigger.value}`;
+    if (rule.trigger.type === "priority_equals") return `Priority becomes ${rule.trigger.value}`;
+    return rule.trigger.value;
+  };
+
+  const resolveActionText = (rule: AutomationRule): string => {
+    if (rule.action.type === "assign_user") {
+      const user = members.find((m) => m.uid === rule.action.value);
+      return `Assign to ${user?.displayName ?? "Unknown"}`;
+    }
+    if (rule.action.type === "set_priority") return `Set Priority to ${rule.action.value}`;
+    return rule.action.value;
+  };
+
+  // ---------------------------------------------------------------------------
+  // Loading state
+  // ---------------------------------------------------------------------------
   if (wsLoading || loading) {
-    return <div className="p-8 text-slate-500">Loading automations...</div>;
+    return (
+      <div className="flex flex-col gap-8 max-w-5xl mx-auto w-full p-8">
+        <title>Automations | Projectify</title>
+        <div className="space-y-2">
+          <Skeleton className="h-9 w-64" />
+          <Skeleton className="h-4 w-96" />
+        </div>
+        <div className="space-y-4">
+          {[1, 2, 3].map((i) => (
+            <Card key={i}>
+              <CardContent className="p-5">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex-1 space-y-3">
+                    <Skeleton className="h-5 w-48" />
+                    <div className="flex items-center gap-3">
+                      <Skeleton className="h-8 w-36 rounded-md" />
+                      <Skeleton className="h-4 w-4" />
+                      <Skeleton className="h-8 w-36 rounded-md" />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Skeleton className="h-6 w-10 rounded-full" />
+                    <Skeleton className="h-8 w-8 rounded-md" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
   }
 
   if (!activeWorkspace) {
-    return <div className="p-8 text-slate-500">No active workspace selected.</div>;
+    return (
+      <div className="p-8 text-slate-500">
+        <title>Automations | Projectify</title>
+        No active workspace selected.
+      </div>
+    );
   }
 
+  // ---------------------------------------------------------------------------
+  // Render
+  // ---------------------------------------------------------------------------
   return (
     <div className="flex flex-col gap-8 max-w-5xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
       <title>Automations | Projectify</title>
-      
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white mb-2 flex items-center gap-2">
-          <Zap className="w-8 h-8 text-amber-500" />
-          Automations Engine
-        </h1>
-        <p className="text-slate-500 dark:text-slate-400">
-          Set up "If-This-Then-That" rules to automate your team's workflow in {activeWorkspace.name}.
-        </p>
-      </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
-        {/* Left Column: Create Form */}
-        <div className="md:col-span-1 space-y-6">
-          <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Plus className="w-5 h-5 text-blue-500" />
-                New Rule
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleCreateRule} className="space-y-4">
+      {/* Page header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white mb-2 flex items-center gap-2">
+            <Zap className="w-8 h-8 text-amber-500" />
+            Automations Engine
+          </h1>
+          <p className="text-slate-500 dark:text-slate-400">
+            Set up "If-This-Then-That" rules to automate your team's workflow in{" "}
+            <span className="font-medium text-slate-700 dark:text-slate-300">
+              {activeWorkspace.name}
+            </span>
+            .
+          </p>
+        </div>
+
+        {/* Create Automation Dialog */}
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="bg-amber-500 hover:bg-amber-600 text-white gap-2">
+              <Plus className="w-4 h-4" />
+              New Automation
+            </Button>
+          </DialogTrigger>
+
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Zap className="w-5 h-5 text-amber-500" />
+                Create Automation Rule
+              </DialogTitle>
+            </DialogHeader>
+
+            <form onSubmit={handleCreateRule} className="space-y-5 pt-2">
+              {/* Rule name */}
+              <div className="space-y-2">
+                <Label htmlFor="rule-name">Rule Name</Label>
+                <Input
+                  id="rule-name"
+                  placeholder="e.g. Auto-assign QA"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                />
+              </div>
+
+              <Separator />
+
+              {/* WHEN */}
+              <div className="space-y-3">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  When (Trigger)
+                </p>
+
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Rule Name</label>
-                  <Input 
-                    placeholder="e.g. Auto-assign QA" 
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required
-                  />
-                </div>
-                
-                <div className="p-4 bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-200 dark:border-slate-800 space-y-3">
-                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">When</p>
-                  
-                  <Select value={triggerType} onValueChange={(val: any) => setTriggerType(val)}>
-                    <SelectTrigger>
+                  <Label htmlFor="trigger-type">Trigger Condition</Label>
+                  <Select
+                    value={triggerType}
+                    onValueChange={(val) => setTriggerType(val as TriggerType)}
+                  >
+                    <SelectTrigger id="trigger-type">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -155,13 +303,16 @@ export default function AutomationsPage() {
                       <SelectItem value="priority_equals">Task Priority Changes To</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
 
+                <div className="space-y-2">
+                  <Label htmlFor="trigger-value">Trigger Value</Label>
                   <Select value={triggerValue} onValueChange={setTriggerValue}>
-                    <SelectTrigger>
+                    <SelectTrigger id="trigger-value">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {triggerType === 'status_equals' ? (
+                      {triggerType === "status_equals" ? (
                         <>
                           <SelectItem value="To Do">To Do</SelectItem>
                           <SelectItem value="In Progress">In Progress</SelectItem>
@@ -178,12 +329,23 @@ export default function AutomationsPage() {
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
 
-                <div className="p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-100 dark:border-blue-900/50 space-y-3">
-                  <p className="text-xs font-semibold text-blue-500 uppercase tracking-wider">Then</p>
-                  
-                  <Select value={actionType} onValueChange={(val: any) => setActionType(val)}>
-                    <SelectTrigger>
+              <Separator />
+
+              {/* THEN */}
+              <div className="space-y-3">
+                <p className="text-xs font-semibold text-amber-500 uppercase tracking-wider">
+                  Then (Action)
+                </p>
+
+                <div className="space-y-2">
+                  <Label htmlFor="action-type">Action Type</Label>
+                  <Select
+                    value={actionType}
+                    onValueChange={(val) => setActionType(val as ActionType)}
+                  >
+                    <SelectTrigger id="action-type">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -191,15 +353,20 @@ export default function AutomationsPage() {
                       <SelectItem value="set_priority">Set Priority To</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
 
+                <div className="space-y-2">
+                  <Label htmlFor="action-value">Action Value</Label>
                   <Select value={actionValue} onValueChange={setActionValue}>
-                    <SelectTrigger>
+                    <SelectTrigger id="action-value">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {actionType === 'assign_user' ? (
-                        members.map(m => (
-                          <SelectItem key={m.uid} value={m.uid}>{m.displayName}</SelectItem>
+                      {actionType === "assign_user" ? (
+                        members.map((m) => (
+                          <SelectItem key={m.uid} value={m.uid}>
+                            {m.displayName}
+                          </SelectItem>
                         ))
                       ) : (
                         <>
@@ -211,92 +378,137 @@ export default function AutomationsPage() {
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
 
-                <Button type="submit" disabled={isSubmitting} className="w-full bg-amber-500 hover:bg-amber-600 text-white">
+              <DialogFooter className="gap-2 pt-2">
+                <DialogClose asChild>
+                  <Button type="button" variant="outline">
+                    Cancel
+                  </Button>
+                </DialogClose>
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="bg-amber-500 hover:bg-amber-600 text-white"
+                >
                   {isSubmitting ? "Saving..." : "Save Automation"}
                 </Button>
-              </form>
-            </CardContent>
-          </Card>
-        </div>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
 
-        {/* Right Column: Rules List */}
-        <div className="md:col-span-2">
-          <div className="space-y-4">
-            {rules.length === 0 ? (
-              <Card className="bg-slate-50 dark:bg-slate-900/50 border-dashed border-slate-300 dark:border-slate-800">
-                <CardContent className="flex flex-col items-center justify-center py-12 text-center text-slate-500">
-                  <Zap className="w-12 h-12 text-slate-300 dark:text-slate-700 mb-4" />
-                  <p className="font-medium text-slate-700 dark:text-slate-300">No Automations Yet</p>
-                  <p className="text-sm mt-1">Create your first rule on the left to start automating your workflow.</p>
+      <Separator />
+
+      {/* Rules list */}
+      {rules.length === 0 ? (
+        <Card className="border-dashed border-2 border-slate-300 dark:border-slate-700 bg-transparent">
+          <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+            <Zap className="w-14 h-14 text-slate-300 dark:text-slate-700 mb-4" />
+            <p className="font-semibold text-slate-700 dark:text-slate-300 text-lg">
+              No automations yet
+            </p>
+            <p className="text-sm text-slate-500 mt-1 mb-6">
+              Create your first rule to start automating your workflow.
+            </p>
+            <Button
+              className="bg-amber-500 hover:bg-amber-600 text-white gap-2"
+              onClick={() => setDialogOpen(true)}
+            >
+              <Plus className="w-4 h-4" />
+              New Automation
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-4">
+          {rules.map((rule) => {
+            const triggerText = resolveTriggerText(rule);
+            const actionText = resolveActionText(rule);
+
+            return (
+              <Card
+                key={rule.id}
+                className={`transition-all duration-300 ${
+                  !rule.isActive
+                    ? "opacity-60 bg-slate-50 dark:bg-slate-900/40"
+                    : "bg-white dark:bg-slate-900 shadow-sm border-amber-200/50 dark:border-amber-900/30"
+                }`}
+              >
+                <CardHeader className="pb-2 pt-4 px-5">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <CardTitle className="text-base font-semibold text-slate-900 dark:text-white">
+                        {rule.name}
+                      </CardTitle>
+                      {!rule.isActive && (
+                        <Badge variant="secondary" className="text-[10px] uppercase tracking-wider">
+                          Paused
+                        </Badge>
+                      )}
+                    </div>
+
+                    {/* Controls */}
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2">
+                        <Label
+                          htmlFor={`toggle-${rule.id}`}
+                          className="text-xs text-slate-500 cursor-pointer"
+                        >
+                          {rule.isActive ? "Active" : "Paused"}
+                        </Label>
+                        <Switch
+                          id={`toggle-${rule.id}`}
+                          checked={rule.isActive}
+                          onCheckedChange={() => handleToggle(rule.id, rule.isActive)}
+                        />
+                      </div>
+
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        onClick={() => handleDelete(rule.id)}
+                        aria-label="Delete automation"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardHeader>
+
+                <Separator className="mx-5 w-auto" />
+
+                <CardContent className="px-5 py-4">
+                  <div className="flex items-center gap-3 flex-wrap text-sm">
+                    {/* Trigger */}
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-slate-600 dark:text-slate-300 border-slate-300 dark:border-slate-600 text-xs">
+                        {TRIGGER_LABELS[rule.trigger.type]}
+                      </Badge>
+                      <span className="font-medium text-slate-700 dark:text-slate-200">
+                        {rule.trigger.value}
+                      </span>
+                    </div>
+
+                    <ArrowRight className="w-4 h-4 text-slate-400 flex-shrink-0" />
+
+                    {/* Action */}
+                    <div className="flex items-center gap-2">
+                      <Badge className="bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-900/50 text-xs">
+                        {ACTION_LABELS[rule.action.type]}
+                      </Badge>
+                      <span className="font-medium text-slate-700 dark:text-slate-200">
+                        {actionText.replace(`${ACTION_LABELS[rule.action.type]} `, "").replace("Assign to ", "").replace("Set Priority to ", "") || actionText}
+                      </span>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
-            ) : (
-              rules.map(rule => {
-                let triggerText = "";
-                if (rule.trigger.type === "status_equals") triggerText = `Status becomes ${rule.trigger.value}`;
-                if (rule.trigger.type === "priority_equals") triggerText = `Priority becomes ${rule.trigger.value}`;
-
-                let actionText = "";
-                if (rule.action.type === "assign_user") {
-                  const user = members.find(m => m.uid === rule.action.value);
-                  actionText = `Assign to ${user?.displayName || 'Unknown'}`;
-                }
-                if (rule.action.type === "set_priority") actionText = `Set Priority to ${rule.action.value}`;
-
-                return (
-                  <Card key={rule.id} className={`transition-all duration-300 ${!rule.isActive ? 'opacity-60 bg-slate-50 dark:bg-slate-900/40' : 'bg-white dark:bg-slate-900 shadow-sm border-amber-200/50 dark:border-amber-900/30'}`}>
-                    <CardContent className="p-5 flex items-center justify-between gap-4">
-                      
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="font-semibold text-slate-900 dark:text-white">{rule.name}</h3>
-                          {!rule.isActive && (
-                            <span className="text-[10px] uppercase tracking-wider font-bold bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400 px-2 py-0.5 rounded-full">
-                              Paused
-                            </span>
-                          )}
-                        </div>
-                        
-                        <div className="flex items-center gap-3 text-sm flex-wrap">
-                          <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-md text-slate-700 dark:text-slate-300">
-                            <span className="text-xs font-bold text-slate-400">WHEN</span>
-                            {triggerText}
-                          </div>
-                          
-                          <ArrowRight className="w-4 h-4 text-slate-400 flex-shrink-0" />
-                          
-                          <div className="flex items-center gap-2 bg-amber-50 dark:bg-amber-950/30 border border-amber-100 dark:border-amber-900/30 px-3 py-1.5 rounded-md text-amber-700 dark:text-amber-400">
-                            <span className="text-xs font-bold text-amber-400 dark:text-amber-600">THEN</span>
-                            {actionText}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-4 border-l border-slate-100 dark:border-slate-800 pl-4">
-                        <Switch 
-                          checked={rule.isActive} 
-                          onCheckedChange={() => handleToggle(rule.id, rule.isActive)} 
-                        />
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          onClick={() => handleDelete(rule.id)}
-                          className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-
-                    </CardContent>
-                  </Card>
-                )
-              })
-            )}
-          </div>
+            );
+          })}
         </div>
-
-      </div>
+      )}
     </div>
   );
 }

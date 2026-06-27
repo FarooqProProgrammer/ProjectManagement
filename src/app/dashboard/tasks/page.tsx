@@ -6,16 +6,21 @@ import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { getTasksByWorkspace, createTask, updateTaskStatus, deleteTask, Task, TaskStatus } from "@/lib/task";
 import { getWorkspaceProjects, Project } from "@/lib/project";
 import { getUsersByIds, UserProfile } from "@/lib/user";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { TaskDetailModal } from "@/components/TaskDetailModal";
-import { CheckCircle2, Clock, MoreVertical, Plus, Trash2, Calendar, GripVertical, Search, Filter } from "lucide-react";
+import { CheckCircle2, Clock, MoreVertical, Plus, Trash2, Calendar, Search, Filter } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+
 const DragDropContext = dynamic(() => import("@hello-pangea/dnd").then(mod => mod.DragDropContext), { ssr: false });
 const Droppable = dynamic(() => import("@hello-pangea/dnd").then(mod => mod.Droppable), { ssr: false });
 const Draggable = dynamic(() => import("@hello-pangea/dnd").then(mod => mod.Draggable), { ssr: false });
@@ -26,7 +31,7 @@ export default function TasksPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [members, setMembers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
-  
+
   // New Task state
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
@@ -147,9 +152,9 @@ export default function TasksPage() {
 
   const filteredTasks = useMemo(() => {
     return tasks.filter(task => {
-      const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                             (task.description?.toLowerCase().includes(searchQuery.toLowerCase()));
-      const matchesAssignee = assigneeFilter === "all" || 
+      const matchesAssignee = assigneeFilter === "all" ||
                               (assigneeFilter === "unassigned" && !task.assigneeId) ||
                               task.assigneeId === assigneeFilter;
       const matchesPriority = priorityFilter === "all" || task.priority === priorityFilter;
@@ -158,7 +163,7 @@ export default function TasksPage() {
     });
   }, [tasks, searchQuery, assigneeFilter, priorityFilter]);
 
-  const columns: { title: string; status: TaskStatus; icon: any }[] = [
+  const columns: { title: string; status: TaskStatus; icon: React.ElementType }[] = [
     { title: "To Do", status: "To Do", icon: Clock },
     { title: "In Progress", status: "In Progress", icon: Clock },
     { title: "Done", status: "Done", icon: CheckCircle2 }
@@ -173,12 +178,10 @@ export default function TasksPage() {
   const onDragEnd = (result: any) => {
     const { destination, source, draggableId } = result;
 
-    // Dropped outside the list
     if (!destination) {
       return;
     }
 
-    // Dropped in the same position
     if (
       destination.droppableId === source.droppableId &&
       destination.index === source.index
@@ -192,321 +195,360 @@ export default function TasksPage() {
   if (!activeWorkspace || !isMounted) {
     return (
       <div className="flex h-full items-center justify-center">
-        <p className="text-slate-500 dark:text-slate-400">Please select a workspace to view tasks.</p>
+        <p className="text-muted-foreground">Please select a workspace to view tasks.</p>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-6 h-full w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <title>My Tasks | Projectify</title>
-      
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-2">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white mb-1">My Tasks</h1>
-          <p className="text-slate-500 dark:text-slate-400">Manage and track your tasks across all projects.</p>
-        </div>
-        
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/20">
-              <Plus className="w-4 h-4 mr-2" />
-              New Task
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Create New Task</DialogTitle>
-              <DialogDescription className="text-slate-500 dark:text-slate-400">
-                Add a new task to your workspace.
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleCreateTask} className="space-y-4 pt-4">
-              <div className="space-y-2">
-                <Label htmlFor="title" className="text-slate-700 dark:text-slate-300">Task Title</Label>
-                <Input
-                  id="title"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="e.g. Design homepage layout"
-                  className="bg-transparent dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
-                  required
-                  autoFocus
-                />
-              </div>
+    <TooltipProvider>
+      <div className="flex flex-col gap-6 h-full w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <title>My Tasks | Projectify</title>
 
-              <div className="space-y-2">
-                <Label htmlFor="project" className="text-slate-700 dark:text-slate-300">Project</Label>
-                <Select value={projectId} onValueChange={setProjectId}>
-                  <SelectTrigger className="bg-transparent dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white">
-                    <SelectValue placeholder="Select a project" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white max-h-48">
-                    <SelectItem value="none">No Project (Workspace Level)</SelectItem>
-                    {projects.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+        {/* Page Header */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-2">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground mb-1">My Tasks</h1>
+            <p className="text-muted-foreground">Manage and track your tasks across all projects.</p>
+          </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="dueDate" className="text-slate-700 dark:text-slate-300">Due Date</Label>
-                <Input
-                  id="dueDate"
-                  type="date"
-                  value={dueDate}
-                  onChange={(e) => setDueDate(e.target.value)}
-                  className="bg-transparent dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="assignee" className="text-slate-700 dark:text-slate-300">Assignee</Label>
-                <Select value={assigneeId} onValueChange={setAssigneeId}>
-                  <SelectTrigger className="bg-transparent dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white">
-                    <SelectValue placeholder="Unassigned" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white max-h-48">
-                    <SelectItem value="none">Unassigned</SelectItem>
-                    {members.map((m) => (
-                      <SelectItem key={m.uid} value={m.uid}>{m.displayName}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="description" className="text-slate-700 dark:text-slate-300">Description (Optional)</Label>
-                <Textarea
-                  id="description"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Add any additional details here..."
-                  className="bg-transparent dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white resize-none"
-                  rows={3}
-                />
-              </div>
-
-              <div className="pt-4 flex justify-end gap-3 border-t border-slate-200 dark:border-slate-800">
-                <Button type="button" variant="ghost" onClick={() => setIsDialogOpen(false)} className="text-slate-500 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800">
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={isCreating || !title.trim()} className="bg-blue-600 hover:bg-blue-500 text-white">
-                  {isCreating ? "Creating..." : "Create Task"}
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      {/* Filter Bar */}
-      <div className="flex flex-col md:flex-row gap-4 bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <Input 
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search tasks..." 
-            className="pl-9 bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800"
-          />
-        </div>
-        
-        <div className="flex gap-4">
-          <div className="w-40">
-            <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
-              <SelectTrigger className="bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800">
-                <div className="flex items-center gap-2">
-                  <Filter className="w-3 h-3" />
-                  <SelectValue placeholder="Assignee" />
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/20">
+                <Plus className="w-4 h-4 mr-2" />
+                New Task
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Create New Task</DialogTitle>
+                <DialogDescription>
+                  Add a new task to your workspace.
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleCreateTask} className="space-y-4 pt-2">
+                <div className="space-y-2">
+                  <Label htmlFor="title">Task Title</Label>
+                  <Input
+                    id="title"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="e.g. Design homepage layout"
+                    required
+                    autoFocus
+                  />
                 </div>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Members</SelectItem>
-                <SelectItem value="unassigned">Unassigned</SelectItem>
-                {members.map(m => (
-                  <SelectItem key={m.uid} value={m.uid}>{m.displayName}</SelectItem>
+
+                <div className="space-y-2">
+                  <Label htmlFor="project">Project</Label>
+                  <Select value={projectId} onValueChange={setProjectId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a project" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-48">
+                      <SelectItem value="none">No Project (Workspace Level)</SelectItem>
+                      {projects.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="dueDate">Due Date</Label>
+                  <Input
+                    id="dueDate"
+                    type="date"
+                    value={dueDate}
+                    onChange={(e) => setDueDate(e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="assignee">Assignee</Label>
+                  <Select value={assigneeId} onValueChange={setAssigneeId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Unassigned" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-48">
+                      <SelectItem value="none">Unassigned</SelectItem>
+                      {members.map((m) => (
+                        <SelectItem key={m.uid} value={m.uid}>{m.displayName}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="description">Description (Optional)</Label>
+                  <Textarea
+                    id="description"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="Add any additional details here..."
+                    className="resize-none"
+                    rows={3}
+                  />
+                </div>
+
+                <DialogFooter className="pt-2 border-t border-border">
+                  <Button type="button" variant="ghost" onClick={() => setIsDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={isCreating || !title.trim()} className="bg-blue-600 hover:bg-blue-500 text-white">
+                    {isCreating ? "Creating..." : "Create Task"}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        {/* Filter Bar */}
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex flex-col md:flex-row gap-3">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search tasks..."
+                  className="pl-9"
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <div className="w-44">
+                  <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
+                    <SelectTrigger>
+                      <div className="flex items-center gap-2">
+                        <Filter className="w-3 h-3 text-muted-foreground" />
+                        <SelectValue placeholder="Assignee" />
+                      </div>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Members</SelectItem>
+                      <SelectItem value="unassigned">Unassigned</SelectItem>
+                      {members.map(m => (
+                        <SelectItem key={m.uid} value={m.uid}>{m.displayName}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="w-44">
+                  <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+                    <SelectTrigger>
+                      <div className="flex items-center gap-2">
+                        <Filter className="w-3 h-3 text-muted-foreground" />
+                        <SelectValue placeholder="Priority" />
+                      </div>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Priorities</SelectItem>
+                      <SelectItem value="High">High</SelectItem>
+                      <SelectItem value="Medium">Medium</SelectItem>
+                      <SelectItem value="Low">Low</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Loading Skeleton */}
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[0, 1, 2].map((col) => (
+              <div key={col} className="flex flex-col gap-3 rounded-2xl bg-muted/40 border border-border p-4">
+                <Skeleton className="h-6 w-24 mb-2" />
+                {[0, 1, 2].map((row) => (
+                  <Skeleton key={row} className="h-24 w-full rounded-lg" />
                 ))}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="w-40">
-            <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-              <SelectTrigger className="bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800">
-                <div className="flex items-center gap-2">
-                  <Filter className="w-3 h-3" />
-                  <SelectValue placeholder="Priority" />
-                </div>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Priorities</SelectItem>
-                <SelectItem value="High">High</SelectItem>
-                <SelectItem value="Medium">Medium</SelectItem>
-                <SelectItem value="Low">Low</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      </div>
-
-      {loading ? (
-        <div className="flex h-64 items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div>
-        </div>
-      ) : (
-        <DragDropContext onDragEnd={onDragEnd}>
-          <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-6 h-full overflow-hidden pb-4">
-            {columns.map((column) => (
-              <div 
-                key={column.title} 
-                className="flex flex-col h-full bg-slate-50/50 dark:bg-slate-900/50 rounded-2xl border border-slate-200/50 dark:border-slate-800/50 overflow-hidden"
-              >
-                <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <column.icon className={`w-5 h-5 ${column.status === "Done" ? "text-green-500 dark:text-green-400" : "text-blue-500 dark:text-blue-400"}`} />
-                    <h3 className="font-semibold text-slate-900 dark:text-white">{column.title}</h3>
-                  </div>
-                  <span className="bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold px-2.5 py-0.5 rounded-full">
-                    {filteredTasks.filter(t => t.status === column.status).length}
-                  </span>
-                </div>
-                
-                <Droppable droppableId={column.status}>
-                  {(provided, snapshot) => (
-                    <div 
-                      ref={provided.innerRef}
-                      {...provided.droppableProps}
-                      className={`flex-1 p-3 overflow-y-auto space-y-3 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800 scrollbar-track-transparent ${snapshot.isDraggingOver ? 'bg-slate-200/50 dark:bg-slate-800/20' : ''}`}
-                    >
-                      {filteredTasks
-                        .filter((t) => t.status === column.status)
-                        .map((task, index) => (
-                          <Draggable key={task.id} draggableId={task.id} index={index}>
-                            {(provided, snapshot) => (
-                              <Card 
-                                ref={provided.innerRef}
-                                {...provided.draggableProps}
-                                {...provided.dragHandleProps}
-                                onClick={() => setSelectedTask(task)}
-                                className={`bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 transition-colors shadow-sm group cursor-pointer ${snapshot.isDragging ? 'shadow-xl shadow-blue-500/10 border-blue-500 dark:border-slate-700 z-50' : 'hover:border-blue-400 dark:hover:border-slate-700'}`}
-                              >
-                                <CardContent className="p-4">
-                                  <div className="flex justify-between items-start gap-2 mb-2">
-                                    <h4 className="font-medium text-slate-900 dark:text-white text-sm leading-snug">{task.title}</h4>
-                                    <div onClick={e => e.stopPropagation()}>
-                                      <DropdownMenu>
-                                      <DropdownMenuTrigger asChild>
-                                        <button className="text-slate-400 dark:text-slate-600 hover:text-slate-900 dark:hover:text-white transition-colors p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 -mt-1 -mr-1">
-                                          <MoreVertical className="w-4 h-4" />
-                                        </button>
-                                      </DropdownMenuTrigger>
-                                      <DropdownMenuContent align="end" className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
-                                        <DropdownMenuItem className="text-slate-500 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white focus:bg-slate-100 dark:focus:bg-slate-800 focus:text-slate-900 dark:focus:text-white">
-                                          Move to...
-                                        </DropdownMenuItem>
-                                        <DropdownMenuSeparator className="bg-slate-200 dark:bg-slate-800" />
-                                        {columns.filter(c => c.status !== task.status).map(c => (
-                                          <DropdownMenuItem 
-                                            key={c.status}
-                                            onClick={() => handleStatusChange(task.id, c.status)}
-                                            className="text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white focus:bg-slate-100 dark:focus:bg-slate-800 focus:text-slate-900 dark:focus:text-white cursor-pointer"
-                                          >
-                                            {c.title}
-                                          </DropdownMenuItem>
-                                        ))}
-                                        <DropdownMenuSeparator className="bg-slate-200 dark:bg-slate-800" />
-                                        <DropdownMenuItem 
-                                          onClick={() => handleDeleteTask(task.id)}
-                                          className="text-red-500 dark:text-red-400 focus:bg-red-50 dark:focus:bg-red-500/10 focus:text-red-600 dark:focus:text-red-400 cursor-pointer"
-                                        >
-                                          <Trash2 className="w-4 h-4 mr-2" />
-                                          Delete
-                                        </DropdownMenuItem>
-                                      </DropdownMenuContent>
-                                    </DropdownMenu>
-                                    </div>
-                                  </div>
-                                  
-                                  {task.description && (
-                                    <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 mb-3">
-                                      {task.description}
-                                    </p>
-                                  )}
-                                  
-                                  <div className="flex items-center justify-between mt-3">
-                                    <div className="flex items-center gap-1.5 flex-wrap">
-                                      <div className={`w-2 h-2 rounded-full ${getProjectColor(task.projectId)}`} />
-                                      <span className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-[100px]">
-                                        {getProjectName(task.projectId)}
-                                      </span>
-                                      
-                                      {task.priority && (
-                                        <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium border ${
-                                          task.priority === 'High' ? 'bg-red-50 text-red-600 border-red-200 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20' :
-                                          task.priority === 'Medium' ? 'bg-yellow-50 text-yellow-600 border-yellow-200 dark:bg-yellow-500/10 dark:text-yellow-400 dark:border-yellow-500/20' :
-                                          'bg-slate-50 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'
-                                        }`}>
-                                          {task.priority}
-                                        </span>
-                                      )}
-                                    </div>
-                                    
-                                    {task.dueDate && (
-                                      <span className="flex items-center text-[10px] text-slate-400 dark:text-slate-500 font-medium">
-                                        <Calendar className="w-3 h-3 mr-1" />
-                                        {new Date(task.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                                      </span>
-                                    )}
-
-                                    {task.assigneeId && memberMap.has(task.assigneeId) && (
-                                      <div className="flex items-center ml-2" title={memberMap.get(task.assigneeId)?.displayName}>
-                                        {memberMap.get(task.assigneeId)?.photoURL ? (
-                                          <img 
-                                            src={memberMap.get(task.assigneeId)?.photoURL!} 
-                                            alt="Assignee" 
-                                            className="w-5 h-5 rounded-full object-cover border border-white dark:border-slate-800" 
-                                          />
-                                        ) : (
-                                          <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center text-[10px] text-white font-bold border border-white dark:border-slate-800">
-                                            {memberMap.get(task.assigneeId)?.displayName?.charAt(0).toUpperCase()}
-                                          </div>
-                                        )}
-                                      </div>
-                                    )}
-                                  </div>
-                                </CardContent>
-                              </Card>
-                            )}
-                          </Draggable>
-                        ))}
-                      {provided.placeholder}
-                      
-                      {filteredTasks.filter((t) => t.status === column.status).length === 0 && (
-                        <div className="h-24 border-2 border-dashed border-slate-200/50 dark:border-slate-800/50 rounded-lg flex items-center justify-center text-slate-400 dark:text-slate-500 text-sm">
-                          Drop tasks here
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </Droppable>
               </div>
             ))}
           </div>
-        </DragDropContext>
-      )}
+        ) : (
+          <DragDropContext onDragEnd={onDragEnd}>
+            <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-6 h-full overflow-hidden pb-4">
+              {columns.map((column) => {
+                const columnTasks = filteredTasks.filter(t => t.status === column.status);
+                return (
+                  <div
+                    key={column.title}
+                    className="flex flex-col h-full bg-muted/40 rounded-2xl border border-border overflow-hidden"
+                  >
+                    {/* Column Header */}
+                    <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <column.icon
+                          className={`w-4 h-4 ${column.status === "Done" ? "text-green-500" : "text-blue-500"}`}
+                        />
+                        <h3 className="font-semibold text-sm text-foreground">{column.title}</h3>
+                      </div>
+                      <Badge variant="secondary" className="font-bold tabular-nums">
+                        {columnTasks.length}
+                      </Badge>
+                    </div>
 
-      <TaskDetailModal 
-        task={selectedTask} 
-        isOpen={!!selectedTask} 
-        onClose={() => setSelectedTask(null)}
-        memberMap={memberMap}
-        onTaskUpdated={(updatedTask) => {
-          setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
-          setSelectedTask(updatedTask);
-        }}
-      />
-    </div>
+                    <Droppable droppableId={column.status}>
+                      {(provided, snapshot) => (
+                        <div
+                          ref={provided.innerRef}
+                          {...provided.droppableProps}
+                          className={`flex-1 p-3 overflow-y-auto space-y-3 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent transition-colors ${snapshot.isDraggingOver ? "bg-muted/60" : ""}`}
+                        >
+                          {columnTasks.map((task, index) => (
+                            <Draggable key={task.id} draggableId={task.id} index={index}>
+                              {(provided, snapshot) => (
+                                <Card
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  {...provided.dragHandleProps}
+                                  onClick={() => setSelectedTask(task)}
+                                  className={`bg-background border-border transition-all shadow-sm cursor-pointer group ${snapshot.isDragging ? "shadow-xl shadow-blue-500/10 border-blue-500 z-50 rotate-1" : "hover:border-blue-400 hover:shadow-md"}`}
+                                >
+                                  <CardContent className="p-3.5">
+                                    {/* Card Top: Title + Menu */}
+                                    <div className="flex justify-between items-start gap-2 mb-2">
+                                      <h4 className="font-medium text-foreground text-sm leading-snug flex-1">{task.title}</h4>
+                                      <div onClick={e => e.stopPropagation()} className="shrink-0">
+                                        <DropdownMenu>
+                                          <Tooltip>
+                                            <TooltipTrigger asChild>
+                                              <DropdownMenuTrigger asChild>
+                                                <button className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded hover:bg-muted -mt-0.5 -mr-0.5 opacity-0 group-hover:opacity-100 focus:opacity-100">
+                                                  <MoreVertical className="w-4 h-4" />
+                                                </button>
+                                              </DropdownMenuTrigger>
+                                            </TooltipTrigger>
+                                            <TooltipContent side="top">Task options</TooltipContent>
+                                          </Tooltip>
+                                          <DropdownMenuContent align="end">
+                                            <DropdownMenuItem className="text-muted-foreground cursor-default" disabled>
+                                              Move to...
+                                            </DropdownMenuItem>
+                                            <DropdownMenuSeparator />
+                                            {columns.filter(c => c.status !== task.status).map(c => (
+                                              <DropdownMenuItem
+                                                key={c.status}
+                                                onClick={() => handleStatusChange(task.id, c.status)}
+                                                className="cursor-pointer"
+                                              >
+                                                {c.title}
+                                              </DropdownMenuItem>
+                                            ))}
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem
+                                              onClick={() => handleDeleteTask(task.id)}
+                                              className="text-destructive focus:text-destructive cursor-pointer"
+                                            >
+                                              <Trash2 className="w-4 h-4 mr-2" />
+                                              Delete
+                                            </DropdownMenuItem>
+                                          </DropdownMenuContent>
+                                        </DropdownMenu>
+                                      </div>
+                                    </div>
+
+                                    {task.description && (
+                                      <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
+                                        {task.description}
+                                      </p>
+                                    )}
+
+                                    {/* Card Footer: project dot, priority badge, due date, assignee */}
+                                    <div className="flex items-center justify-between gap-2 mt-2 flex-wrap">
+                                      <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                                        <div className={`w-2 h-2 rounded-full shrink-0 ${getProjectColor(task.projectId)}`} />
+                                        <span className="text-xs text-muted-foreground truncate max-w-[90px]">
+                                          {getProjectName(task.projectId)}
+                                        </span>
+
+                                        {task.priority && (
+                                          task.priority === "High" ? (
+                                            <Badge variant="destructive" className="text-[10px] h-4 px-1.5">
+                                              High
+                                            </Badge>
+                                          ) : task.priority === "Medium" ? (
+                                            <Badge className="text-[10px] h-4 px-1.5 bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-500/15 dark:text-amber-400 dark:border-amber-500/20">
+                                              Medium
+                                            </Badge>
+                                          ) : (
+                                            <Badge variant="secondary" className="text-[10px] h-4 px-1.5">
+                                              Low
+                                            </Badge>
+                                          )
+                                        )}
+                                      </div>
+
+                                      <div className="flex items-center gap-1.5 shrink-0">
+                                        {task.dueDate && (
+                                          <span className="flex items-center text-[10px] text-muted-foreground font-medium">
+                                            <Calendar className="w-3 h-3 mr-0.5" />
+                                            {new Date(task.dueDate).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                                          </span>
+                                        )}
+
+                                        {task.assigneeId && memberMap.has(task.assigneeId) && (
+                                          <Tooltip>
+                                            <TooltipTrigger asChild>
+                                              <span className="inline-flex">
+                                                <Avatar size="sm" className="w-5 h-5 ring-2 ring-background">
+                                                  {memberMap.get(task.assigneeId)?.photoURL && (
+                                                    <AvatarImage
+                                                      src={memberMap.get(task.assigneeId)!.photoURL!}
+                                                      alt={memberMap.get(task.assigneeId)?.displayName ?? "Assignee"}
+                                                    />
+                                                  )}
+                                                  <AvatarFallback className="text-[10px] bg-blue-500 text-white font-bold">
+                                                    {memberMap.get(task.assigneeId)?.displayName?.charAt(0).toUpperCase()}
+                                                  </AvatarFallback>
+                                                </Avatar>
+                                              </span>
+                                            </TooltipTrigger>
+                                            <TooltipContent side="top">
+                                              {memberMap.get(task.assigneeId)?.displayName}
+                                            </TooltipContent>
+                                          </Tooltip>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              )}
+                            </Draggable>
+                          ))}
+                          {provided.placeholder}
+
+                          {columnTasks.length === 0 && (
+                            <div className="h-24 border-2 border-dashed border-border rounded-lg flex items-center justify-center text-muted-foreground text-sm">
+                              Drop tasks here
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </Droppable>
+                  </div>
+                );
+              })}
+            </div>
+          </DragDropContext>
+        )}
+
+        <TaskDetailModal
+          task={selectedTask}
+          isOpen={!!selectedTask}
+          onClose={() => setSelectedTask(null)}
+          memberMap={memberMap}
+          onTaskUpdated={(updatedTask) => {
+            setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
+            setSelectedTask(updatedTask);
+          }}
+        />
+      </div>
+    </TooltipProvider>
   );
 }

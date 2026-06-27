@@ -115,7 +115,8 @@ export default function NewProjectPage() {
       <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
         <CardHeader>
           <CardTitle className="text-slate-900 dark:text-white">Project Details</CardTitle>
-          <CardDescription className="text-slate-500 dark:text-slate-400">Fill out the information below to create a project.</CardDescription>
+          <CardDescription className="text-slate-500 dark:text-slate-400">
+            .</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleCreate} className="space-y-6">
